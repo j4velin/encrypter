@@ -1,11 +1,28 @@
+/*
+ * Copyright 2016 Thomas Hoffmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.j4velin.encrypter;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.CancellationSignal;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.widget.Toast;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -14,7 +31,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
@@ -23,45 +39,42 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+/**
+ * Utility class to deal with the cryptographic stuff.
+ *
+ * @see <a href="https://github.com/googlesamples/android-FingerprintDialog">Based on Google's FingerprintSample</a>
+ */
 public class CipherUtil {
 
-    public final static int IV_LENGTH = 16;
-    private final static SecureRandom random = new SecureRandom();
+    private CipherUtil() {
+    }
 
     /**
      * Alias for our key in the Android Key Store
      */
     private static final String KEY_NAME = "my_key";
 
-    private KeyStore mKeyStore;
-    private Cipher encrypt;
-    private Cipher decrypt;
-    private KeyGenerator mKeyGenerator;
+    private static KeyStore mKeyStore;
+    private static Cipher encrypt;
+    private static Cipher decrypt;
+    private static KeyGenerator mKeyGenerator;
 
-    public byte[] getNewIV() {
-        byte[] re = new byte[IV_LENGTH];
-        random.nextBytes(re);
-        return re;
-    }
-
-    void init() {
-        try {
-            mKeyStore = KeyStore.getInstance("AndroidKeyStore");
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-        try {
-            mKeyGenerator =
-                    KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-            encrypt = Cipher.getInstance(
-                    KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
-                            KeyProperties.ENCRYPTION_PADDING_PKCS7);
-            decrypt = Cipher.getInstance(
-                    KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
-                            KeyProperties.ENCRYPTION_PADDING_PKCS7);
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-        }
+    /**
+     * Initializes the keystore and the ciphers and creates the key if necessary
+     *
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
+    static void init() throws GeneralSecurityException, IOException {
+        mKeyStore = KeyStore.getInstance("AndroidKeyStore");
+        mKeyGenerator =
+                KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+        encrypt = Cipher.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
+                        KeyProperties.ENCRYPTION_PADDING_PKCS7);
+        decrypt = Cipher.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
+                        KeyProperties.ENCRYPTION_PADDING_PKCS7);
         if (!hasKey()) {
             createKey();
         }
@@ -72,29 +85,30 @@ public class CipherUtil {
      * Creates a symmetric key in the Android Key Store which can only be used after the user has
      * authenticated with fingerprint.
      */
-    private void createKey() {
+    private static void createKey() throws CertificateException, NoSuchAlgorithmException,
+            IOException, InvalidAlgorithmParameterException {
         // The enrolling flow for fingerprint. This is where you ask the user to set up fingerprint
         // for your flow. Use of keys is necessary if you need to know if the set of
         // enrolled fingerprints has changed.
-        try {
-            mKeyStore.load(null);
-            // Set the alias of the entry in Android KeyStore where the key will appear
-            // and the constrains (purposes) in the constructor of the Builder
-            mKeyGenerator.init(new KeyGenParameterSpec.Builder(KEY_NAME,
-                    KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT).setBlockModes(
-                    KeyProperties.BLOCK_MODE_CBC)
-                    // Require the user to authenticate with a fingerprint to authorize every use
-                    // of the key
-                    .setUserAuthenticationRequired(true)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7).build());
-            mKeyGenerator.generateKey();
-        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException
-                | CertificateException | IOException e) {
-            throw new RuntimeException(e);
-        }
+        mKeyStore.load(null);
+        // Set the alias of the entry in Android KeyStore where the key will appear
+        // and the constrains (purposes) in the constructor of the Builder
+        mKeyGenerator.init(new KeyGenParameterSpec.Builder(KEY_NAME,
+                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT).setBlockModes(
+                KeyProperties.BLOCK_MODE_CBC)
+                // Require the user to authenticate with a fingerprint to authorize every use
+                // of the key
+                .setUserAuthenticationRequired(true)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7).build());
+        mKeyGenerator.generateKey();
     }
 
-    private boolean hasKey() {
+    /**
+     * Checks if a key has already been create
+     *
+     * @return true, if a key is already created
+     */
+    private static boolean hasKey() {
         try {
             mKeyStore.load(null);
             SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
@@ -106,20 +120,18 @@ public class CipherUtil {
     }
 
     /**
-     * Initialize the {@link Cipher} instance with the created key in the {@link #createKey()}
-     * method.
+     * Request a cipher
      *
-     * @return {@code true} if initialization is successful, {@code false} if the lock screen has
-     * been disabled or reset after the key was generated, or if a fingerprint got enrolled after
-     * the key was generated.
+     * @param context  the context
+     * @param iv       the initialization vector for CBC mode or null, to request encryption cipher
+     * @param callback the callback which will be notified once the cipher is ready
      */
-    void getCipher(final Context context, boolean doEncrypt, byte[] iv,
-                   final CipherResultCallback callback) {
+    static void getCipher(final Context context, final byte[] iv, final CipherResultCallback callback) {
         try {
             mKeyStore.load(null);
             SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
-            if (doEncrypt) {
-                encrypt.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
+            if (iv == null) {
+                encrypt.init(Cipher.ENCRYPT_MODE, key);
             } else {
                 decrypt.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
             }
@@ -128,27 +140,46 @@ public class CipherUtil {
             e.printStackTrace();
             throw new RuntimeException("Failed to init Decipher", e);
         }
-        auth(doEncrypt ? this.encrypt : decrypt, context, callback);
+        auth(iv == null ? encrypt : decrypt, context, callback);
     }
 
-    private void auth(final Cipher c, final Context context, final CipherResultCallback callback) {
+    private static void auth(final Cipher c, final Context context, final CipherResultCallback callback) {
         FingerprintManager.CryptoObject mCryptoObject = new FingerprintManager.CryptoObject(c);
-        CancellationSignal mCancellationSignal = new CancellationSignal();
-        Toast.makeText(context, "Place finger", Toast.LENGTH_SHORT).show();
+        final CancellationSignal mCancellationSignal = new CancellationSignal();
+        final Dialog dialog = new AlertDialog.Builder(context).setView(R.layout.fingerprint_dialog)
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                    @Override
+                    public void onCancel(final DialogInterface dialogInterface) {
+                        mCancellationSignal.cancel();
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(final DialogInterface dialogInterface, int which) {
+                        dialogInterface.cancel();
+                    }
+                }).create();
+        dialog.show();
         //noinspection ResourceType
         ((FingerprintManager) context.getSystemService(Context.FINGERPRINT_SERVICE))
                 .authenticate(mCryptoObject, mCancellationSignal, 0 /* flags */,
                         new FingerprintManager.AuthenticationCallback() {
                             @Override
-                            public void onAuthenticationSucceeded(
-                                    FingerprintManager.AuthenticationResult result) {
+                            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
                                 super.onAuthenticationSucceeded(result);
+                                dialog.dismiss();
                                 callback.cipherAvailable(c);
                             }
                         }, null);
     }
 
     interface CipherResultCallback {
+        /**
+         * A cipher is now ready for use
+         *
+         * @param c the cipher
+         */
         void cipherAvailable(final Cipher c);
     }
 }
