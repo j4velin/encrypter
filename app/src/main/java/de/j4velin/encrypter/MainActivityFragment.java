@@ -58,7 +58,7 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
     @Override
     public void encryptionComplete(final File encryptedFile) {
         Database db = new Database(getContext());
-        db.addFile(encryptedFile);
+        encryptedFile.id = db.addFile(encryptedFile);
         db.close();
         adapter.files.add(encryptedFile);
         adapter.notifyItemInserted(adapter.files.size());

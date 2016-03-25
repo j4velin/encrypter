@@ -43,9 +43,9 @@ class File {
     /**
      * The id of the entry in the database or -1, if no such exists (yet)
      */
-    final int id;
+    long id;
 
-    protected File(final int id, final String name, final String mime, final Uri uri,
+    protected File(final long id, final String name, final String mime, final Uri uri,
                    final int size) {
         this.id = id;
         this.name = name;

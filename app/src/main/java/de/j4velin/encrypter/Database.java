@@ -75,7 +75,7 @@ public class Database extends SQLiteOpenHelper {
      *
      * @param id the id of the entry to delete
      */
-    public void deleteFile(final int id) {
+    public void deleteFile(final long id) {
         getWritableDatabase()
                 .delete(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract._ID + " = ?",
                         new String[]{String.valueOf(id)});

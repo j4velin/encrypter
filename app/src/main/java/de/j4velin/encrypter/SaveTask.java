@@ -42,6 +42,7 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
         dialog.setProgressStyle(resultFile.size > 0 ? ProgressDialog.STYLE_HORIZONTAL :
                 ProgressDialog.STYLE_SPINNER);
         dialog.setMax(resultFile.size);
+        dialog.setProgressNumberFormat("%1d/%2d Bytes");
     }
 
     @Override
