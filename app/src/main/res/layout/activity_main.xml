@@ -20,6 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="32dp"
-        android:src="@android:drawable/ic_lock_idle_lock"/>
+        android:src="@drawable/ic_lock"
+        android:tint="#fff"/>
 
 </android.support.design.widget.CoordinatorLayout>
