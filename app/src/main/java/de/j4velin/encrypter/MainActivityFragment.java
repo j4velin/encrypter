@@ -43,7 +43,8 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
     private File selectedFile;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
         RecyclerView recyclerView =
                 (RecyclerView) inflater.inflate(R.layout.fragment_main, container, false);
         Database db = new Database(getContext());
@@ -61,7 +62,7 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
         db.addFile(encryptedFile);
         db.close();
         adapter.files.add(encryptedFile);
-        adapter.notifyDataSetChanged();
+        adapter.notifyItemInserted(adapter.files.size());
     }
 
     @Override
@@ -86,6 +87,14 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
             @Override
             public void onClick(final View view) {
                 int position = (int) view.getTag();
+                java.io.File f = new java.io.File(files.get(position).uri.getPath());
+                if (f.delete()) {
+                    Database db = new Database(getContext());
+                    db.deleteFile(files.get(position).id);
+                    db.close();
+                    files.remove(position);
+                    notifyItemRemoved(position);
+                }
             }
         };
         private final View.OnClickListener decryptListener = new View.OnClickListener() {

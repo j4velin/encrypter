@@ -32,8 +32,8 @@ import javax.crypto.spec.IvParameterSpec;
 
 public class CryptoUtil {
 
-    public static void encrypt(final Context context, final EncryptCallback callback, final File plaintextFile) throws
-            FileNotFoundException {
+    public static void encrypt(final Context context, final EncryptCallback callback,
+                               final File plaintextFile) throws FileNotFoundException {
         java.io.File dir = context.getExternalFilesDir(null);
         if (dir == null) {
             dir = context.getFilesDir();
@@ -41,7 +41,7 @@ public class CryptoUtil {
         java.io.File encryptedFile = new java.io.File(dir, plaintextFile.name + ".enc");
         Uri uri = Uri.fromFile(encryptedFile);
         final File resultFile =
-                new File(plaintextFile.name, plaintextFile.mime, uri, plaintextFile.size);
+                new File(-1, plaintextFile.name, plaintextFile.mime, uri, plaintextFile.size);
         final OutputStream output = new FileOutputStream(encryptedFile);
         final InputStream input = context.getContentResolver().openInputStream(plaintextFile.uri);
         CipherUtil.getCipher(context, null, new CipherUtil.CipherResultCallback() {
@@ -52,8 +52,8 @@ public class CryptoUtil {
                     output.write(iv.length);
                     output.write(iv);
                     CipherOutputStream outputStream = new CipherOutputStream(output, c);
-                    new SaveTask(context, callback, resultFile).execute(
-                            new SaveTask.Streams(input, outputStream));
+                    new SaveTask(context, callback, resultFile)
+                            .execute(new SaveTask.Streams(input, outputStream));
                 } catch (IOException | InvalidParameterSpecException e) {
                     e.printStackTrace();
                 }
@@ -61,8 +61,8 @@ public class CryptoUtil {
         });
     }
 
-    public static void decrypt(final Context context, final File encrypted, final OutputStream output) throws
-            IOException {
+    public static void decrypt(final Context context, final File encrypted,
+                               final OutputStream output) throws IOException {
         final InputStream input = context.getContentResolver().openInputStream(encrypted.uri);
         int ivLength = input.read();
         byte[] iv = new byte[ivLength];

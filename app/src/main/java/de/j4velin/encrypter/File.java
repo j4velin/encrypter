@@ -23,8 +23,11 @@ class File {
     final String mime;
     final Uri uri;
     final int size;
+    final int id;
 
-    protected File(final String name, final String mime, final Uri uri, final int size) {
+    protected File(final int id, final String name, final String mime, final Uri uri,
+                   final int size) {
+        this.id = id;
         this.name = name;
         this.mime = mime;
         this.uri = uri;
@@ -33,6 +36,6 @@ class File {
 
     @Override
     public String toString() {
-        return name + "," + mime + "," + size + "," + uri;
+        return id + "," + name + "," + mime + "," + size + "," + uri;
     }
 }

@@ -64,19 +64,27 @@ public class Database extends SQLiteOpenHelper {
         return getWritableDatabase().insert(EncryptedFilesContract.TABLE_NAME, null, values);
     }
 
+    public void deleteFile(final int id) {
+        getWritableDatabase()
+                .delete(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract._ID + " = ?",
+                        new String[]{String.valueOf(id)});
+    }
+
     public List<File> getFiles() {
         try (Cursor c = getReadableDatabase()
                 .query(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract.ALL_COLUMNS, null,
                         null, null, null, null)) {
             if (c != null && c.moveToFirst()) {
+                int indexId = c.getColumnIndex(EncryptedFilesContract._ID);
                 int indexName = c.getColumnIndex(EncryptedFilesContract.COLUMN_FILENAME);
                 int indexMime = c.getColumnIndex(EncryptedFilesContract.COLUMN_MIME);
                 int indexUri = c.getColumnIndex(EncryptedFilesContract.COLUMN_URI);
                 int indexSize = c.getColumnIndex(EncryptedFilesContract.COLUMN_SIZE);
                 List<File> re = new ArrayList<>(c.getCount());
                 while (!c.isAfterLast()) {
-                    re.add(new File(c.getString(indexName), c.getString(indexMime),
-                            Uri.parse(c.getString(indexUri)), c.getInt(indexSize)));
+                    re.add(new File(c.getInt(indexId), c.getString(indexName),
+                            c.getString(indexMime), Uri.parse(c.getString(indexUri)),
+                            c.getInt(indexSize)));
                     c.moveToNext();
                 }
                 return re;

@@ -99,7 +99,8 @@ public class MainActivity extends AppCompatActivity {
                         builder.setPositiveButton("Register finger",
                                 new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void onClick(final DialogInterface dialogInterface, int i) {
+                                    public void onClick(final DialogInterface dialogInterface,
+                                                        int i) {
                                         startActivity(
                                                 new Intent(Settings.ACTION_SECURITY_SETTINGS));
                                         dialogInterface.cancel();
@@ -110,7 +111,8 @@ public class MainActivity extends AppCompatActivity {
                         builder.setPositiveButton("Setup lockscreen",
                                 new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void onClick(final DialogInterface dialogInterface, int i) {
+                                    public void onClick(final DialogInterface dialogInterface,
+                                                        int i) {
                                         startActivity(
                                                 new Intent(Settings.ACTION_SECURITY_SETTINGS));
                                         dialogInterface.cancel();
@@ -157,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, final String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, final String[] permissions,
+                                           int[] grantResults) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             init();
         }
@@ -183,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }
-                    File input = new File(inputName, inputType, uri, inputSize);
+                    File input = new File(-1, inputName, inputType, uri, inputSize);
                     try {
                         CryptoUtil.encrypt(MainActivity.this, fragment, input);
                     } catch (FileNotFoundException e) {
