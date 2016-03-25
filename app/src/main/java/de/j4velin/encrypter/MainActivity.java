@@ -82,7 +82,15 @@ public class MainActivity extends AppCompatActivity {
             try {
                 if (CipherUtil.init()) {
                     new AlertDialog.Builder(this).setTitle(R.string.key_generated)
-                            .setMessage(R.string.new_key_warning).create().show();
+                            .setMessage(R.string.new_key_warning)
+                            .setPositiveButton(android.R.string.ok,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(final DialogInterface dialogInterface,
+                                                            int i) {
+                                            dialogInterface.dismiss();
+                                        }
+                                    }).create().show();
                 }
             } catch (GeneralSecurityException | IOException e) {
                 e.printStackTrace();
