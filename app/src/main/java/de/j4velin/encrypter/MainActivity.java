@@ -109,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
                                         dialogInterface.cancel();
                                     }
                                 });
+                        break;
                     case DEVICE_SECURE:
                         builder.setMessage(R.string.error_no_lockscreen);
                         builder.setPositiveButton(R.string.setup_lockscreen,
