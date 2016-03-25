@@ -16,6 +16,8 @@
 package de.j4velin.encrypter;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -85,15 +87,32 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
         private final View.OnClickListener deleteListener = new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
-                int position = (int) view.getTag();
-                java.io.File f = new java.io.File(files.get(position).uri.getPath());
-                if (f.delete()) {
-                    Database db = new Database(getContext());
-                    db.deleteFile(files.get(position).id);
-                    db.close();
-                    files.remove(position);
-                    notifyItemRemoved(position);
-                }
+                final int position = (int) view.getTag();
+                final File file = files.get(position);
+                new AlertDialog.Builder(getContext())
+                        .setMessage(getString(R.string.ask_delete, file.name))
+                        .setNegativeButton(android.R.string.no,
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(final DialogInterface dialogInterface,
+                                                        int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).setPositiveButton(android.R.string.yes,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(final DialogInterface dialogInterface, int i) {
+                                java.io.File f = new java.io.File(file.uri.getPath());
+                                if (f.delete()) {
+                                    Database db = new Database(getContext());
+                                    db.deleteFile(file.id);
+                                    db.close();
+                                    files.remove(position);
+                                    notifyItemRemoved(position);
+                                }
+                                dialogInterface.dismiss();
+                            }
+                        }).create().show();
             }
         };
         private final View.OnClickListener decryptListener = new View.OnClickListener() {

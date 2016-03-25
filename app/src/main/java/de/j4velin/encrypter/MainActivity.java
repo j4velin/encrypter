@@ -88,15 +88,15 @@ public class MainActivity extends AppCompatActivity {
         if (error != null || exception != null) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             if (exception != null) {
-                builder.setMessage("Error creating/loading cryptographic key: " + exception);
+                builder.setMessage(getString(R.string.error_load_key, exception));
             } else {
                 switch (error) {
                     case FINGERPRINT_SENSOR:
-                        builder.setMessage("No fingerprint reader found");
+                        builder.setMessage(R.string.error_no_fingerprint_hardware);
                         break;
                     case FINGERPRINT_SETUP:
-                        builder.setMessage("No fingerprints registered");
-                        builder.setPositiveButton("Register finger",
+                        builder.setMessage(R.string.error_no_fingerprints);
+                        builder.setPositiveButton(R.string.register_finger,
                                 new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(final DialogInterface dialogInterface,
@@ -107,8 +107,8 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                     case DEVICE_SECURE:
-                        builder.setMessage("No secure lockscreen found");
-                        builder.setPositiveButton("Setup lockscreen",
+                        builder.setMessage(R.string.error_no_lockscreen);
+                        builder.setPositiveButton(R.string.setup_lockscreen,
                                 new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(final DialogInterface dialogInterface,
