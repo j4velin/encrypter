@@ -154,13 +154,20 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
         public void onBindViewHolder(final ViewHolder holder, int position) {
             File f = files.get(position);
             holder.name.setText(f.name);
-            int icon = 0;
+            if (f.mime.contains("/")) {
+                holder.mime.setContentDescription(f.mime.substring(0, f.mime.indexOf("/")));
+            } else {
+                holder.mime.setContentDescription(getString(R.string.unknown_file));
+            }
+            int icon;
             if (f.mime.startsWith("image")) {
                 icon = R.drawable.ic_photo;
             } else if (f.mime.startsWith("video")) {
                 icon = R.drawable.ic_movie;
             } else if (f.mime.startsWith("audio")) {
                 icon = R.drawable.ic_sound;
+            } else {
+                icon = R.drawable.ic_file;
             }
             holder.mime.setImageResource(icon);
             holder.delete.setTag(position);

@@ -61,7 +61,14 @@ class File {
 
     @Override
     public String toString() {
-        return id + "," + name + "," + mime + "," + size + "," + uri + "," +
+        return id + "," + name + "," + mime + "," + formatSize(size) + "," + uri + "," +
                 (isEncrypted ? "enc" : "plain");
+    }
+
+    public static String formatSize(int size) {
+        if (size < 1024) return size + " Bytes";
+        int kb = size / 1024;
+        if (kb < 1024) return kb + " KB";
+        else return (kb / 1024) + " MB";
     }
 }
