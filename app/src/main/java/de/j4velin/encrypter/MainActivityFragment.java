@@ -30,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
@@ -83,7 +84,14 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
             if (requestCode == REQUEST_OUTPUT) {
                 try {
                     CryptoUtil.decrypt(getContext(), this, selectedFile, data.getData());
+                } catch (FileNotFoundException e) {
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            R.string.file_not_found, Snackbar.LENGTH_LONG).show();
+                    e.printStackTrace();
                 } catch (IOException e) {
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            getString(R.string.error_reading_file, e.getMessage()),
+                            Snackbar.LENGTH_LONG).show();
                     e.printStackTrace();
                 }
             }

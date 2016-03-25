@@ -29,6 +29,7 @@ import android.provider.OpenableColumns;
 import android.provider.Settings;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
@@ -194,7 +195,8 @@ public class MainActivity extends AppCompatActivity {
             try {
                 CryptoUtil.encrypt(MainActivity.this, fragment, input);
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                Snackbar.make(coordinatorLayout, R.string.file_not_found, Snackbar.LENGTH_LONG)
+                        .show();
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);

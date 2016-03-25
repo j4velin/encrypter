@@ -49,7 +49,7 @@ class CryptoUtil {
      * @throws FileNotFoundException
      */
     static void encrypt(final Context context, final CryptoCallback callback,
-                               final File plaintextFile) throws FileNotFoundException {
+                        final File plaintextFile) throws FileNotFoundException {
         java.io.File dir = context.getExternalFilesDir(null);
         if (dir == null) {
             dir = context.getFilesDir();
@@ -98,7 +98,7 @@ class CryptoUtil {
      * @throws IOException
      */
     static void decrypt(final Context context, final CryptoCallback callback,
-                               final File encryptedFile, final Uri out) throws IOException {
+                        final File encryptedFile, final Uri out) throws IOException {
         final InputStream input = new BufferedInputStream(
                 context.getContentResolver().openInputStream(encryptedFile.uri));
         final OutputStream output =
