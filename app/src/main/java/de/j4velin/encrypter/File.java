@@ -17,12 +17,32 @@ package de.j4velin.encrypter;
 
 import android.net.Uri;
 
+/**
+ * A class representing an encrypted or a plaintext file.
+ * If the object represents an encrypted file, the name, mime type and size information are those of
+ * the originating plaintext file
+ */
 class File {
 
+    /**
+     * The original display name
+     */
     final String name;
+    /**
+     * The original mime type
+     */
     final String mime;
+    /**
+     * The uri of the file
+     */
     final Uri uri;
+    /**
+     * The original file size
+     */
     final int size;
+    /**
+     * The id of the entry in the database or -1, if no such exists (yet)
+     */
     final int id;
 
     protected File(final int id, final String name, final String mime, final Uri uri,

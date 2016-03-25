@@ -55,6 +55,12 @@ public class Database extends SQLiteOpenHelper {
                 " TEXT, " + EncryptedFilesContract.COLUMN_SIZE + " INTEGER)");
     }
 
+    /**
+     * Adds the given file to the database of encrypted files
+     *
+     * @param file the encrypted file
+     * @return the entry id
+     */
     public long addFile(final File file) {
         ContentValues values = new ContentValues();
         values.put(EncryptedFilesContract.COLUMN_FILENAME, file.name);
@@ -64,12 +70,22 @@ public class Database extends SQLiteOpenHelper {
         return getWritableDatabase().insert(EncryptedFilesContract.TABLE_NAME, null, values);
     }
 
+    /**
+     * Deletes a file from the database
+     *
+     * @param id the id of the entry to delete
+     */
     public void deleteFile(final int id) {
         getWritableDatabase()
                 .delete(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract._ID + " = ?",
                         new String[]{String.valueOf(id)});
     }
 
+    /**
+     * Gets all encrypted files in the database
+     *
+     * @return the list of encrypted files
+     */
     public List<File> getFiles() {
         try (Cursor c = getReadableDatabase()
                 .query(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract.ALL_COLUMNS, null,

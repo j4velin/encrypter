@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ * Background task to save the encrypted/decrypted file to the file system
+ */
 public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;

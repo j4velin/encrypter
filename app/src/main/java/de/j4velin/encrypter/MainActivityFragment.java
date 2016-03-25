@@ -33,13 +33,12 @@ import java.io.OutputStream;
 import java.util.List;
 
 /**
- * A placeholder fragment containing a simple view.
+ * Fragment showing the list of encrypted files
  */
 public class MainActivityFragment extends Fragment implements EncryptCallback {
 
     private FileAdapter adapter;
     private final static int REQUEST_OUTPUT = 1;
-
     private File selectedFile;
 
     @Override

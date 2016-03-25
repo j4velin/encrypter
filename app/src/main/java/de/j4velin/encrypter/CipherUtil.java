@@ -40,7 +40,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
 /**
- * Utility class to deal with the cryptographic stuff.
+ * Utility class to deal with the cryptographic ciphers.
  *
  * @see <a href="https://github.com/googlesamples/android-FingerprintDialog">Based on Google's FingerprintSample</a>
  */
@@ -126,7 +126,8 @@ public class CipherUtil {
      * @param iv       the initialization vector for CBC mode or null, to request encryption cipher
      * @param callback the callback which will be notified once the cipher is ready
      */
-    static void getCipher(final Context context, final byte[] iv, final CipherResultCallback callback) {
+    static void getCipher(final Context context, final byte[] iv,
+                          final CipherResultCallback callback) {
         try {
             mKeyStore.load(null);
             SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
@@ -143,7 +144,8 @@ public class CipherUtil {
         auth(iv == null ? encrypt : decrypt, context, callback);
     }
 
-    private static void auth(final Cipher c, final Context context, final CipherResultCallback callback) {
+    private static void auth(final Cipher c, final Context context,
+                             final CipherResultCallback callback) {
         FingerprintManager.CryptoObject mCryptoObject = new FingerprintManager.CryptoObject(c);
         final CancellationSignal mCancellationSignal = new CancellationSignal();
         final Dialog dialog = new AlertDialog.Builder(context).setView(R.layout.fingerprint_dialog)
@@ -166,7 +168,8 @@ public class CipherUtil {
                 .authenticate(mCryptoObject, mCancellationSignal, 0 /* flags */,
                         new FingerprintManager.AuthenticationCallback() {
                             @Override
-                            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+                            public void onAuthenticationSucceeded(
+                                    FingerprintManager.AuthenticationResult result) {
                                 super.onAuthenticationSucceeded(result);
                                 dialog.dismiss();
                                 callback.cipherAvailable(c);
