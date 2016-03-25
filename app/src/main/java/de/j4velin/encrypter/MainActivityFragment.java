@@ -162,6 +162,7 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
         public void onBindViewHolder(final ViewHolder holder, int position) {
             File f = files.get(position);
             holder.name.setText(f.name);
+            holder.size.setText(File.formatSize(f.size));
             if (f.mime.contains("/")) {
                 holder.mime.setContentDescription(f.mime.substring(0, f.mime.indexOf("/")));
             } else {
@@ -189,7 +190,7 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
 
         public class ViewHolder extends RecyclerView.ViewHolder {
             private final ImageView mime;
-            private final TextView name;
+            private final TextView name, size;
             private final View delete;
             private final View card;
 
@@ -198,6 +199,7 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
                 card = itemView;
                 mime = (ImageView) itemView.findViewById(R.id.mime);
                 name = (TextView) itemView.findViewById(R.id.name);
+                size = (TextView) itemView.findViewById(R.id.size);
                 delete = itemView.findViewById(R.id.delete);
             }
         }
