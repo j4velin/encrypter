@@ -43,8 +43,8 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
     private File selectedFile;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                             final Bundle savedInstanceState) {
         RecyclerView recyclerView =
                 (RecyclerView) inflater.inflate(R.layout.fragment_main, container, false);
         Database db = new Database(getContext());
@@ -59,9 +59,6 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
     @Override
     public void operationComplete(final File resultFile) {
         if (resultFile.isEncrypted) {
-            Database db = new Database(getContext());
-            resultFile.id = db.addFile(resultFile);
-            db.close();
             adapter.files.add(resultFile);
             adapter.notifyItemInserted(adapter.files.size());
         } else {
@@ -115,7 +112,7 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
                             @Override
                             public void onClick(final DialogInterface dialogInterface, int i) {
                                 java.io.File f = new java.io.File(file.uri.getPath());
-                                if (f.delete()) {
+                                if (!f.exists() || f.delete()) {
                                     Database db = new Database(getContext());
                                     db.deleteFile(file.id);
                                     db.close();

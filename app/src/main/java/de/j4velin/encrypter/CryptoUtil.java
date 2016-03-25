@@ -18,6 +18,8 @@ package de.j4velin.encrypter;
 import android.content.Context;
 import android.net.Uri;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -53,11 +55,17 @@ public class CryptoUtil {
             dir = context.getFilesDir();
         }
         java.io.File encryptedFile = new java.io.File(dir, plaintextFile.name + ".enc");
+        int tries = 2;
+        while (encryptedFile.exists()) {
+            encryptedFile = new java.io.File(dir, plaintextFile.name + "_" + tries + ".enc");
+            tries++;
+        }
         Uri uri = Uri.fromFile(encryptedFile);
         final File resultFile =
                 new File(-1, plaintextFile.name, plaintextFile.mime, uri, plaintextFile.size, true);
-        final OutputStream output = new FileOutputStream(encryptedFile);
-        final InputStream input = context.getContentResolver().openInputStream(plaintextFile.uri);
+        final OutputStream output = new BufferedOutputStream(new FileOutputStream(encryptedFile));
+        final InputStream input = new BufferedInputStream(
+                context.getContentResolver().openInputStream(plaintextFile.uri));
         CipherUtil.getCipher(context, null, new CipherUtil.CipherResultCallback() {
             @Override
             public void cipherAvailable(final Cipher c) {
@@ -86,8 +94,10 @@ public class CryptoUtil {
      */
     public static void decrypt(final Context context, final CryptoCallback callback,
                                final File encryptedFile, final Uri out) throws IOException {
-        final InputStream input = context.getContentResolver().openInputStream(encryptedFile.uri);
-        final OutputStream output = context.getContentResolver().openOutputStream(out);
+        final InputStream input = new BufferedInputStream(
+                context.getContentResolver().openInputStream(encryptedFile.uri));
+        final OutputStream output =
+                new BufferedOutputStream(context.getContentResolver().openOutputStream(out));
         int ivLength = input.read();
         byte[] iv = new byte[ivLength];
         input.read(iv);

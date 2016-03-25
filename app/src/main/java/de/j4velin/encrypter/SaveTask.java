@@ -30,11 +30,14 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;
     private final static int UPDATE_PERCENT = 5;
+    private final static int BUFFER_SIZE = 8192;
 
+    private final Context context;
     private final File resultFile;
     private final CryptoCallback callback;
 
     public SaveTask(final Context context, final CryptoCallback callback, final File resultFile) {
+        this.context = context;
         this.resultFile = resultFile;
         this.callback = callback;
         dialog = new ProgressDialog(context);
@@ -55,6 +58,9 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     protected void onPostExecute(Void aVoid) {
         super.onPostExecute(aVoid);
         dialog.dismiss();
+        Database db = new Database(context);
+        resultFile.id = db.addFile(resultFile);
+        db.close();
         if (callback != null) {
             callback.operationComplete(resultFile);
         }
@@ -68,19 +74,19 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     @Override
     protected Void doInBackground(final Streams... parameters) {
         int bytesRead = 0;
-        int max = resultFile.size;
-        int percent = (int) (max / (100f / UPDATE_PERCENT));
+        int percentage = (int) (resultFile.size * (UPDATE_PERCENT / 100f));
         InputStream in = parameters[0].input;
         OutputStream out = parameters[0].output;
+        byte[] buffer = new byte[BUFFER_SIZE];
         int read;
+        int nextUpdate = percentage;
         try {
-            while ((read = in.read()) != -1) {
-                out.write(read);
-                if (max > 0) {
-                    bytesRead++;
-                    if (bytesRead % percent == 0) {
-                        publishProgress(bytesRead);
-                    }
+            while ((read = in.read(buffer)) > 0) {
+                out.write(buffer, 0, read);
+                bytesRead += read;
+                if (bytesRead > nextUpdate) {
+                    publishProgress(bytesRead);
+                    nextUpdate = bytesRead + percentage;
                 }
             }
             out.flush();

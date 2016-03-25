@@ -10,4 +10,5 @@
     <string name="setup_lockscreen">Setup lockscreen</string>
     <string name="file_decrypted">%s decrypted</string>
     <string name="open_file">Open file</string>
+    <string name="authenticate_with_fingerprint">Please authenticate with your fingerprint</string>
 </resources>
