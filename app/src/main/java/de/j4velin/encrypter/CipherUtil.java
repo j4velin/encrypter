@@ -23,6 +23,7 @@ import android.hardware.fingerprint.FingerprintManager;
 import android.os.CancellationSignal;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -165,7 +166,7 @@ class CipherUtil {
         dialog.show();
         //noinspection ResourceType
         ((FingerprintManager) context.getSystemService(Context.FINGERPRINT_SERVICE))
-                .authenticate(mCryptoObject, mCancellationSignal, 0 /* flags */,
+                .authenticate(mCryptoObject, mCancellationSignal, 0,
                         new FingerprintManager.AuthenticationCallback() {
                             @Override
                             public void onAuthenticationSucceeded(
@@ -173,6 +174,14 @@ class CipherUtil {
                                 super.onAuthenticationSucceeded(result);
                                 dialog.dismiss();
                                 callback.cipherAvailable(c);
+                            }
+
+                            @Override
+                            public void onAuthenticationError(int errorCode,
+                                                              final CharSequence errString) {
+                                super.onAuthenticationError(errorCode, errString);
+                                ((TextView) dialog.findViewById(R.id.text))
+                                        .setText(context.getString(R.string.auth_error, errString));
                             }
                         }, null);
     }

@@ -15,4 +15,5 @@
     <string name="unknown_file">unknown file type</string>
     <string name="file_not_found">File not found</string>
     <string name="error_reading_file">Error reading file: %s</string>
+    <string name="auth_error">Authentication error: %s</string>
 </resources>
