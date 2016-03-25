@@ -30,33 +30,20 @@ import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.GeneralSecurityException;
-import java.security.spec.InvalidParameterSpecException;
-
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.spec.IvParameterSpec;
 
 public class MainActivity extends AppCompatActivity {
 
     private final static int REQUEST_INPUT = 1;
-    private final static int REQUEST_OUTPUT = 2;
-    private final static int REQUEST_PERMISSION = 3;
-    private InputStream input;
-    private OutputStream output;
-    private String inputName;
-    private int inputSize;
-    private SaveTask saveTask;
+    private final static int REQUEST_PERMISSION = 2;
+
+    private MainActivityFragment fragment;
 
     private enum Requirement {
         FINGERPRINT_PERMISSION,
@@ -152,8 +139,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
         fab.setOnClickListener(new View.OnClickListener() {
@@ -165,8 +150,9 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_INPUT);
             }
         });
+        fragment =
+                (MainActivityFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
         init();
-        saveTask = new SaveTask(this);
     }
 
 
@@ -183,105 +169,26 @@ public class MainActivity extends AppCompatActivity {
             Uri uri = data.getData();
             switch (requestCode) {
                 case REQUEST_INPUT:
-                    try {
-                        input = getContentResolver().openInputStream(uri);
-                        String inputType = getContentResolver().getType(uri);
-                        // The query, since it only applies to a single document, will only return
-                        // one row. There's no need to filter, sort, or select fields, since we want
-                        // all fields for one document.
-                        Cursor cursor =
-                                getContentResolver().query(uri, null, null, null, null, null);
-
-                        try {
-                            // moveToFirst() returns false if the cursor has 0 rows.  Very handy for
-                            // "if there's anything to look at, look at it" conditionals.
-                            if (cursor != null && cursor.moveToFirst()) {
-                                inputName = cursor.getString(
-                                        cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-
-                                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-                                if (!cursor.isNull(sizeIndex)) {
-                                    inputSize = cursor.getInt(sizeIndex);
-                                } else {
-                                    // size is only required for the progress dialog
-                                    inputSize = -1;
-                                }
+                    String inputName = null;
+                    int inputSize = -1;
+                    String inputType = getContentResolver().getType(uri);
+                    try (Cursor cursor = getContentResolver()
+                            .query(uri, null, null, null, null, null)) {
+                        if (cursor != null && cursor.moveToFirst()) {
+                            inputName = cursor.getString(
+                                    cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                            int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                            if (!cursor.isNull(sizeIndex)) {
+                                inputSize = cursor.getInt(sizeIndex);
                             }
-                        } finally {
-                            cursor.close();
                         }
-                        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                        intent.addCategory(Intent.CATEGORY_OPENABLE);
-                        intent.setType(inputType);
-                        String outputName;
-                        if (inputName.contains(".")) {
-                            int index = inputName.lastIndexOf(".");
-                            outputName = inputName.substring(0, index) + "_2" +
-                                    inputName.substring(index);
-                        } else {
-                            outputName = inputName;
-                        }
-                        intent.putExtra(Intent.EXTRA_TITLE, outputName);
-                        startActivityForResult(intent, REQUEST_OUTPUT);
+                    }
+                    File input = new File(inputName, inputType, uri, inputSize);
+                    try {
+                        CryptoUtil.encrypt(MainActivity.this, fragment, input);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     }
-                    break;
-                case REQUEST_OUTPUT:
-                    try {
-                        output = getContentResolver().openOutputStream(uri);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    new AlertDialog.Builder(this)
-                            .setPositiveButton("Encrypt", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(final DialogInterface dialogInterface, int button) {
-                                    CipherUtil.getCipher(MainActivity.this, null,
-                                            new CipherUtil.CipherResultCallback() {
-                                                @Override
-                                                public void cipherAvailable(final Cipher c) {
-                                                    try {
-                                                        byte[] iv = c.getParameters()
-                                                                .getParameterSpec(
-                                                                        IvParameterSpec.class)
-                                                                .getIV();
-                                                        output.write(iv.length);
-                                                        output.write(iv);
-                                                        CipherOutputStream outputStream =
-                                                                new CipherOutputStream(output, c);
-                                                        saveTask.execute(
-                                                                new SaveTask.Parameters(input,
-                                                                        outputStream, inputSize));
-                                                    } catch (IOException | InvalidParameterSpecException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-                                            });
-                                }
-                            }).setNeutralButton("Decrypt", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(final DialogInterface dialogInterface, int button) {
-                            try {
-                                int ivLength = input.read();
-                                byte[] iv = new byte[ivLength];
-                                input.read(iv);
-                                CipherUtil.getCipher(MainActivity.this, iv,
-                                        new CipherUtil.CipherResultCallback() {
-                                            @Override
-                                            public void cipherAvailable(final Cipher c) {
-                                                CipherInputStream inputStream =
-                                                        new CipherInputStream(input, c);
-                                                saveTask.execute(
-                                                        new SaveTask.Parameters(inputStream, output,
-                                                                inputSize));
-                                            }
-                                        });
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }).create().show();
                     break;
             }
         }

@@ -23,16 +23,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class SaveTask extends AsyncTask<SaveTask.Parameters, Integer, Void> {
+public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;
     private final static int UPDATE_PERCENT = 5;
 
-    public SaveTask(final Context c) {
-        dialog = new ProgressDialog(c);
+    private final File resultFile;
+    private final EncryptCallback callback;
+
+    public SaveTask(final Context context, final EncryptCallback callback, final File resultFile) {
+        this.resultFile = resultFile;
+        this.callback = callback;
+        dialog = new ProgressDialog(context);
         dialog.setCancelable(false);
-        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        dialog.setMax(100);
+        dialog.setProgressStyle(resultFile.size > 0 ? ProgressDialog.STYLE_HORIZONTAL :
+                ProgressDialog.STYLE_SPINNER);
+        dialog.setMax(resultFile.size);
     }
 
     @Override
@@ -45,25 +51,21 @@ public class SaveTask extends AsyncTask<SaveTask.Parameters, Integer, Void> {
     protected void onPostExecute(Void aVoid) {
         super.onPostExecute(aVoid);
         dialog.dismiss();
+        if (callback != null) {
+            callback.encryptionComplete(resultFile);
+        }
     }
 
     @Override
     protected void onProgressUpdate(Integer... values) {
-        if (values[0] < 0) {
-            dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        } else {
-            dialog.incrementProgressBy(UPDATE_PERCENT);
-        }
+        dialog.setProgress(values[0]);
     }
 
     @Override
-    protected Void doInBackground(final Parameters... parameters) {
+    protected Void doInBackground(final Streams... parameters) {
         int bytesRead = 0;
-        int max = parameters[0].size;
+        int max = resultFile.size;
         int percent = (int) (max / (100f / UPDATE_PERCENT));
-        if (max < 0) {
-            publishProgress(-1);
-        }
         InputStream in = parameters[0].input;
         OutputStream out = parameters[0].output;
         int read;
@@ -95,15 +97,13 @@ public class SaveTask extends AsyncTask<SaveTask.Parameters, Integer, Void> {
         return null;
     }
 
-    public static class Parameters {
+    public static class Streams {
         private final InputStream input;
         private final OutputStream output;
-        private final int size;
 
-        public Parameters(final InputStream input, final OutputStream output, int size) {
+        public Streams(final InputStream input, final OutputStream output) {
             this.input = input;
             this.output = output;
-            this.size = size;
         }
     }
 }
