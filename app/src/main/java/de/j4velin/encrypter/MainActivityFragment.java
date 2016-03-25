@@ -32,6 +32,7 @@ import android.widget.TextView;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 
 /**
@@ -84,15 +85,17 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
             if (requestCode == REQUEST_OUTPUT) {
                 try {
                     CryptoUtil.decrypt(getContext(), this, selectedFile, data.getData());
+                } catch (GeneralSecurityException e) {
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            getString(R.string.error_security, e.getMessage()),
+                            Snackbar.LENGTH_LONG).show();
                 } catch (FileNotFoundException e) {
                     Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
-                            R.string.file_not_found, Snackbar.LENGTH_LONG).show();
-                    e.printStackTrace();
+                            R.string.error_file_not_found, Snackbar.LENGTH_LONG).show();
                 } catch (IOException e) {
                     Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
-                            getString(R.string.error_reading_file, e.getMessage()),
-                            Snackbar.LENGTH_LONG).show();
-                    e.printStackTrace();
+                            getString(R.string.error_io, e.getMessage()), Snackbar.LENGTH_LONG)
+                            .show();
                 }
             }
         }

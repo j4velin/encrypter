@@ -5,15 +5,19 @@
     <string name="error_load_key">Error creating/loading cryptographic key: %s</string>
     <string name="error_no_fingerprint_hardware">No fingerprint reader found</string>
     <string name="error_no_fingerprints">No fingerprints registered</string>
-    <string name="register_finger">Register finger</string>
+    <string name="error_security">Security error: %s</string>
+    <string name="error_io">Error reading/writing file: %s</string>
     <string name="error_no_lockscreen">No secure lockscreen found</string>
+    <string name="error_file_not_found">File not found</string>
+    <string name="error_authentication">Authentication error: %s</string>
+    <string name="register_finger">Register finger</string>
     <string name="setup_lockscreen">Setup lockscreen</string>
     <string name="file_decrypted">%s decrypted</string>
     <string name="open_file">Open file</string>
     <string name="authenticate_with_fingerprint">Please authenticate with your fingerprint</string>
     <string name="delete">delete</string>
     <string name="unknown_file">unknown file type</string>
-    <string name="file_not_found">File not found</string>
-    <string name="error_reading_file">Error reading file: %s</string>
-    <string name="auth_error">Authentication error: %s</string>
+    <string name="key_generated">Encryption key generated</string>
+    <string name="new_key_warning">A new encryption key has been generated. Please be aware that this key is automatically deleted if you delete the app or change your lockscreen settings! You can not decrypt encrypted files without this key!</string>
+
 </resources>

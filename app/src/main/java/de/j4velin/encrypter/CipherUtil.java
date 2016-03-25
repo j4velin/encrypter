@@ -28,11 +28,8 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 import javax.crypto.Cipher;
@@ -63,10 +60,11 @@ class CipherUtil {
     /**
      * Initializes the keystore and the ciphers and creates the key if necessary
      *
+     * @return true, if a new key has been generated
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    static void init() throws GeneralSecurityException, IOException {
+    static boolean init() throws GeneralSecurityException, IOException {
         mKeyStore = KeyStore.getInstance("AndroidKeyStore");
         mKeyGenerator =
                 KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
@@ -78,6 +76,9 @@ class CipherUtil {
                         KeyProperties.ENCRYPTION_PADDING_PKCS7);
         if (!hasKey()) {
             createKey();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -128,19 +129,14 @@ class CipherUtil {
      * @param callback the callback which will be notified once the cipher is ready
      */
     static void getCipher(final Context context, final byte[] iv,
-                          final CipherResultCallback callback) {
-        try {
-            mKeyStore.load(null);
-            SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
-            if (iv == null) {
-                encrypt.init(Cipher.ENCRYPT_MODE, key);
-            } else {
-                decrypt.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
-            }
-        } catch (InvalidAlgorithmParameterException | KeyStoreException | CertificateException | UnrecoverableKeyException | IOException
-                | NoSuchAlgorithmException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to init Decipher", e);
+                          final CipherResultCallback callback) throws GeneralSecurityException,
+            IOException {
+        mKeyStore.load(null);
+        SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
+        if (iv == null) {
+            encrypt.init(Cipher.ENCRYPT_MODE, key);
+        } else {
+            decrypt.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
         }
         auth(iv == null ? encrypt : decrypt, context, callback);
     }
@@ -181,7 +177,7 @@ class CipherUtil {
                                                               final CharSequence errString) {
                                 super.onAuthenticationError(errorCode, errString);
                                 ((TextView) dialog.findViewById(R.id.text))
-                                        .setText(context.getString(R.string.auth_error, errString));
+                                        .setText(context.getString(R.string.error_authentication, errString));
                             }
                         }, null);
     }

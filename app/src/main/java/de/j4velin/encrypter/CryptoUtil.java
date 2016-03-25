@@ -20,11 +20,11 @@ import android.net.Uri;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.security.spec.InvalidParameterSpecException;
 
 import javax.crypto.Cipher;
@@ -46,10 +46,9 @@ class CryptoUtil {
      * @param context       the context
      * @param callback      callback to be called once the encryption is complete
      * @param plaintextFile the plaintext file
-     * @throws FileNotFoundException
      */
     static void encrypt(final Context context, final CryptoCallback callback,
-                        final File plaintextFile) throws FileNotFoundException {
+                        final File plaintextFile) throws GeneralSecurityException, IOException {
         java.io.File dir = context.getExternalFilesDir(null);
         if (dir == null) {
             dir = context.getFilesDir();
@@ -95,10 +94,10 @@ class CryptoUtil {
      * @param callback      callback to be called once the decryption is complete
      * @param encryptedFile the encrypted file
      * @param out           the output uri to write the plaintext file to
-     * @throws IOException
      */
     static void decrypt(final Context context, final CryptoCallback callback,
-                        final File encryptedFile, final Uri out) throws IOException {
+                        final File encryptedFile, final Uri out) throws GeneralSecurityException,
+            IOException {
         final InputStream input = new BufferedInputStream(
                 context.getContentResolver().openInputStream(encryptedFile.uri));
         final OutputStream output =

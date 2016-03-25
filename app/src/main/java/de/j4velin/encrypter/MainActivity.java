@@ -27,6 +27,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -79,7 +80,10 @@ public class MainActivity extends AppCompatActivity {
         String exception = null;
         if (error == null) {
             try {
-                CipherUtil.init();
+                if (CipherUtil.init()) {
+                    new AlertDialog.Builder(this).setTitle(R.string.key_generated)
+                            .setMessage(R.string.new_key_warning).create().show();
+                }
             } catch (GeneralSecurityException | IOException e) {
                 e.printStackTrace();
                 exception = e.getMessage();
@@ -168,8 +172,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, final String[] permissions,
-                                           int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull final String[] permissions,
+                                           @NonNull int[] grantResults) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             init();
         }
@@ -195,13 +199,22 @@ public class MainActivity extends AppCompatActivity {
             File input = new File(-1, inputName, inputType, uri, inputSize, false);
             try {
                 CryptoUtil.encrypt(MainActivity.this, fragment, input);
+            } catch (GeneralSecurityException e) {
+                Snackbar.make(coordinatorLayout, getString(R.string.error_security, e.getMessage()),
+                        Snackbar.LENGTH_LONG).show();
             } catch (FileNotFoundException e) {
-                Snackbar.make(coordinatorLayout, R.string.file_not_found, Snackbar.LENGTH_LONG)
-                        .show();
+                Snackbar.make(coordinatorLayout, R.string.error_file_not_found,
+                        Snackbar.LENGTH_LONG).show();
+            } catch (IOException e) {
+                Snackbar.make(coordinatorLayout, getString(R.string.error_io, e.getMessage()),
+                        Snackbar.LENGTH_LONG).show();
             }
-        } else {
+        } else
+
+        {
             super.onActivityResult(requestCode, resultCode, data);
         }
+
     }
 
     @Override
