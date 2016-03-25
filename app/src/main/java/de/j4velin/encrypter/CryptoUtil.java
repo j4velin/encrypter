@@ -55,10 +55,15 @@ public class CryptoUtil {
             dir = context.getFilesDir();
         }
         java.io.File encryptedFile = new java.io.File(dir, plaintextFile.name + ".enc");
-        int tries = 2;
-        while (encryptedFile.exists()) {
-            encryptedFile = new java.io.File(dir, plaintextFile.name + "_" + tries + ".enc");
-            tries++;
+        if (encryptedFile.exists()) {
+            int index = plaintextFile.name.lastIndexOf(".");
+            String prefix = plaintextFile.name.substring(0, index) + "_";
+            String postfix = plaintextFile.name.substring(index) + ".enc";
+            int tries = 2;
+            while (encryptedFile.exists()) {
+                encryptedFile = new java.io.File(dir, prefix + tries + postfix);
+                tries++;
+            }
         }
         Uri uri = Uri.fromFile(encryptedFile);
         final File resultFile =
