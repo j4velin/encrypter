@@ -15,7 +15,7 @@
  */
 package de.j4velin.encrypter;
 
-public interface CryptoCallback {
+interface CryptoCallback {
     /**
      * Called when the encryption/decryption is complete
      *

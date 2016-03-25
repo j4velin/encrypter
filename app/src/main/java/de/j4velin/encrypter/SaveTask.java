@@ -26,7 +26,7 @@ import java.io.OutputStream;
 /**
  * Background task to save the isEncrypted/decrypted file to the file system
  */
-public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
+class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;
     private final static int UPDATE_PERCENT = 5;
@@ -36,7 +36,7 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     private final File resultFile;
     private final CryptoCallback callback;
 
-    public SaveTask(final Context context, final CryptoCallback callback, final File resultFile) {
+    SaveTask(final Context context, final CryptoCallback callback, final File resultFile) {
         this.context = context;
         this.resultFile = resultFile;
         this.callback = callback;
@@ -107,11 +107,11 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
         return null;
     }
 
-    public static class Streams {
+    static class Streams {
         private final InputStream input;
         private final OutputStream output;
 
-        public Streams(final InputStream input, final OutputStream output) {
+        Streams(final InputStream input, final OutputStream output) {
             this.input = input;
             this.output = output;
         }

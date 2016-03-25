@@ -44,7 +44,7 @@ import javax.crypto.spec.IvParameterSpec;
  *
  * @see <a href="https://github.com/googlesamples/android-FingerprintDialog">Based on Google's FingerprintSample</a>
  */
-public class CipherUtil {
+class CipherUtil {
 
     private CipherUtil() {
     }

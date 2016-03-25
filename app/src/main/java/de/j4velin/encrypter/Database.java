@@ -26,7 +26,7 @@ import android.provider.BaseColumns;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Database extends SQLiteOpenHelper {
+class Database extends SQLiteOpenHelper {
 
     private final static String DB_NAME = "db";
     private final static int DB_VERSION = 1;
@@ -41,7 +41,7 @@ public class Database extends SQLiteOpenHelper {
                 new String[]{_ID, COLUMN_FILENAME, COLUMN_MIME, COLUMN_URI, COLUMN_SIZE};
     }
 
-    public Database(final Context context) {
+    Database(final Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
@@ -61,7 +61,7 @@ public class Database extends SQLiteOpenHelper {
      * @param file the isEncrypted file
      * @return the entry id
      */
-    public long addFile(final File file) {
+    long addFile(final File file) {
         ContentValues values = new ContentValues();
         values.put(EncryptedFilesContract.COLUMN_FILENAME, file.name);
         values.put(EncryptedFilesContract.COLUMN_MIME, file.mime);
@@ -75,7 +75,7 @@ public class Database extends SQLiteOpenHelper {
      *
      * @param id the id of the entry to delete
      */
-    public void deleteFile(final long id) {
+    void deleteFile(final long id) {
         getWritableDatabase()
                 .delete(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract._ID + " = ?",
                         new String[]{String.valueOf(id)});
@@ -86,7 +86,7 @@ public class Database extends SQLiteOpenHelper {
      *
      * @return the list of isEncrypted files
      */
-    public List<File> getFiles() {
+    List<File> getFiles() {
         try (Cursor c = getReadableDatabase()
                 .query(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract.ALL_COLUMNS, null,
                         null, null, null, null)) {

@@ -35,7 +35,7 @@ import javax.crypto.spec.IvParameterSpec;
 /**
  * Utility class to deal with encryption and decryption
  */
-public class CryptoUtil {
+class CryptoUtil {
 
     private CryptoUtil() {
     }
@@ -48,7 +48,7 @@ public class CryptoUtil {
      * @param plaintextFile the plaintext file
      * @throws FileNotFoundException
      */
-    public static void encrypt(final Context context, final CryptoCallback callback,
+    static void encrypt(final Context context, final CryptoCallback callback,
                                final File plaintextFile) throws FileNotFoundException {
         java.io.File dir = context.getExternalFilesDir(null);
         if (dir == null) {
@@ -97,7 +97,7 @@ public class CryptoUtil {
      * @param out           the output uri to write the plaintext file to
      * @throws IOException
      */
-    public static void decrypt(final Context context, final CryptoCallback callback,
+    static void decrypt(final Context context, final CryptoCallback callback,
                                final File encryptedFile, final Uri out) throws IOException {
         final InputStream input = new BufferedInputStream(
                 context.getContentResolver().openInputStream(encryptedFile.uri));
