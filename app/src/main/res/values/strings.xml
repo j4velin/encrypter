@@ -8,4 +8,6 @@
     <string name="register_finger">Register finger</string>
     <string name="error_no_lockscreen">No secure lockscreen found</string>
     <string name="setup_lockscreen">Setup lockscreen</string>
+    <string name="file_decrypted">%s decrypted</string>
+    <string name="open_file">Open file</string>
 </resources>

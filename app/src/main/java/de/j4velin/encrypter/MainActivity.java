@@ -27,6 +27,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.provider.Settings;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_PERMISSION = 2;
 
     private MainActivityFragment fragment;
+    private CoordinatorLayout coordinatorLayout;
 
     private enum Requirement {
         FINGERPRINT_PERMISSION,
@@ -137,10 +139,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    CoordinatorLayout getCoordinatorLayout() {
+        return coordinatorLayout;
+    }
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
         fab.setOnClickListener(new View.OnClickListener() {
@@ -168,32 +175,29 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
-        if (resultCode == RESULT_OK && data != null) {
+        if (requestCode == REQUEST_INPUT && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            switch (requestCode) {
-                case REQUEST_INPUT:
-                    String inputName = null;
-                    int inputSize = -1;
-                    String inputType = getContentResolver().getType(uri);
-                    try (Cursor cursor = getContentResolver()
-                            .query(uri, null, null, null, null, null)) {
-                        if (cursor != null && cursor.moveToFirst()) {
-                            inputName = cursor.getString(
-                                    cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                            int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-                            if (!cursor.isNull(sizeIndex)) {
-                                inputSize = cursor.getInt(sizeIndex);
-                            }
-                        }
+            String inputName = null;
+            int inputSize = -1;
+            String inputType = getContentResolver().getType(uri);
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    inputName =
+                            cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                    int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                    if (!cursor.isNull(sizeIndex)) {
+                        inputSize = cursor.getInt(sizeIndex);
                     }
-                    File input = new File(-1, inputName, inputType, uri, inputSize);
-                    try {
-                        CryptoUtil.encrypt(MainActivity.this, fragment, input);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    break;
+                }
             }
+            File input = new File(-1, inputName, inputType, uri, inputSize, false);
+            try {
+                CryptoUtil.encrypt(MainActivity.this, fragment, input);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
         }
     }
 

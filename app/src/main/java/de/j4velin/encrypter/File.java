@@ -18,8 +18,8 @@ package de.j4velin.encrypter;
 import android.net.Uri;
 
 /**
- * A class representing an encrypted or a plaintext file.
- * If the object represents an encrypted file, the name, mime type and size information are those of
+ * A class representing an isEncrypted or a plaintext file.
+ * If the object represents an isEncrypted file, the name, mime type and size information are those of
  * the originating plaintext file
  */
 class File {
@@ -44,18 +44,24 @@ class File {
      * The id of the entry in the database or -1, if no such exists (yet)
      */
     long id;
+    /**
+     * True, if this object represents an encrypted file
+     */
+    final boolean isEncrypted;
 
     protected File(final long id, final String name, final String mime, final Uri uri,
-                   final int size) {
+                   final int size, final boolean isEncrypted) {
         this.id = id;
         this.name = name;
         this.mime = mime;
         this.uri = uri;
         this.size = size;
+        this.isEncrypted = isEncrypted;
     }
 
     @Override
     public String toString() {
-        return id + "," + name + "," + mime + "," + size + "," + uri;
+        return id + "," + name + "," + mime + "," + size + "," + uri + "," +
+                (isEncrypted ? "enc" : "plain");
     }
 }

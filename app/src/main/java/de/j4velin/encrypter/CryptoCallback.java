@@ -15,11 +15,11 @@
  */
 package de.j4velin.encrypter;
 
-public interface EncryptCallback {
+public interface CryptoCallback {
     /**
-     * Called when the encrypted is complete
+     * Called when the encryption/decryption is complete
      *
-     * @param encryptedFile the newly encrypted file
+     * @param resultFile the newly isEncrypted or decrypted file
      */
-    void encryptionComplete(final File encryptedFile);
+    void operationComplete(final File resultFile);
 }

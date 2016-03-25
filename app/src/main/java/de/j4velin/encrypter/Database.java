@@ -56,9 +56,9 @@ public class Database extends SQLiteOpenHelper {
     }
 
     /**
-     * Adds the given file to the database of encrypted files
+     * Adds the given file to the database of isEncrypted files
      *
-     * @param file the encrypted file
+     * @param file the isEncrypted file
      * @return the entry id
      */
     public long addFile(final File file) {
@@ -82,9 +82,9 @@ public class Database extends SQLiteOpenHelper {
     }
 
     /**
-     * Gets all encrypted files in the database
+     * Gets all isEncrypted files in the database
      *
-     * @return the list of encrypted files
+     * @return the list of isEncrypted files
      */
     public List<File> getFiles() {
         try (Cursor c = getReadableDatabase()
@@ -100,7 +100,7 @@ public class Database extends SQLiteOpenHelper {
                 while (!c.isAfterLast()) {
                     re.add(new File(c.getInt(indexId), c.getString(indexName),
                             c.getString(indexMime), Uri.parse(c.getString(indexUri)),
-                            c.getInt(indexSize)));
+                            c.getInt(indexSize), true));
                     c.moveToNext();
                 }
                 return re;

@@ -19,8 +19,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -31,13 +31,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 /**
- * Fragment showing the list of encrypted files
+ * Fragment showing the list of isEncrypted files
  */
-public class MainActivityFragment extends Fragment implements EncryptCallback {
+public class MainActivityFragment extends Fragment implements CryptoCallback {
 
     private FileAdapter adapter;
     private final static int REQUEST_OUTPUT = 1;
@@ -58,22 +57,35 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
     }
 
     @Override
-    public void encryptionComplete(final File encryptedFile) {
-        Database db = new Database(getContext());
-        encryptedFile.id = db.addFile(encryptedFile);
-        db.close();
-        adapter.files.add(encryptedFile);
-        adapter.notifyItemInserted(adapter.files.size());
+    public void operationComplete(final File resultFile) {
+        if (resultFile.isEncrypted) {
+            Database db = new Database(getContext());
+            resultFile.id = db.addFile(resultFile);
+            db.close();
+            adapter.files.add(resultFile);
+            adapter.notifyItemInserted(adapter.files.size());
+        } else {
+            Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                    getString(R.string.file_decrypted, resultFile.name), Snackbar.LENGTH_LONG)
+                    .setActionTextColor(getResources().getColor(R.color.colorPrimary, null))
+                    .setAction(R.string.open_file, new View.OnClickListener() {
+                        @Override
+                        public void onClick(final View view) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setDataAndType(resultFile.uri, resultFile.mime);
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            startActivity(intent);
+                        }
+                    }).show();
+        }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, final Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_OUTPUT) {
-                Uri output = data.getData();
                 try {
-                    OutputStream out = getActivity().getContentResolver().openOutputStream(output);
-                    CryptoUtil.decrypt(getContext(), selectedFile, out);
+                    CryptoUtil.decrypt(getContext(), this, selectedFile, data.getData());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

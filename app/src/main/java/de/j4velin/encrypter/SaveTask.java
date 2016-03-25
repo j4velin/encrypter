@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Background task to save the encrypted/decrypted file to the file system
+ * Background task to save the isEncrypted/decrypted file to the file system
  */
 public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
@@ -32,9 +32,9 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     private final static int UPDATE_PERCENT = 5;
 
     private final File resultFile;
-    private final EncryptCallback callback;
+    private final CryptoCallback callback;
 
-    public SaveTask(final Context context, final EncryptCallback callback, final File resultFile) {
+    public SaveTask(final Context context, final CryptoCallback callback, final File resultFile) {
         this.resultFile = resultFile;
         this.callback = callback;
         dialog = new ProgressDialog(context);
@@ -42,7 +42,7 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
         dialog.setProgressStyle(resultFile.size > 0 ? ProgressDialog.STYLE_HORIZONTAL :
                 ProgressDialog.STYLE_SPINNER);
         dialog.setMax(resultFile.size);
-        dialog.setProgressNumberFormat("%1d/%2d Bytes");
+        dialog.setProgressNumberFormat("%1d / %2d Bytes");
     }
 
     @Override
@@ -56,7 +56,7 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
         super.onPostExecute(aVoid);
         dialog.dismiss();
         if (callback != null) {
-            callback.encryptionComplete(resultFile);
+            callback.operationComplete(resultFile);
         }
     }
 
