@@ -26,7 +26,7 @@ import android.provider.BaseColumns;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Database extends SQLiteOpenHelper {
+class Database extends SQLiteOpenHelper {
 
     private final static String DB_NAME = "db";
     private final static int DB_VERSION = 1;
@@ -41,7 +41,7 @@ public class Database extends SQLiteOpenHelper {
                 new String[]{_ID, COLUMN_FILENAME, COLUMN_MIME, COLUMN_URI, COLUMN_SIZE};
     }
 
-    public Database(final Context context) {
+    Database(final Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
@@ -55,7 +55,13 @@ public class Database extends SQLiteOpenHelper {
                 " TEXT, " + EncryptedFilesContract.COLUMN_SIZE + " INTEGER)");
     }
 
-    public long addFile(final File file) {
+    /**
+     * Adds the given file to the database of isEncrypted files
+     *
+     * @param file the isEncrypted file
+     * @return the entry id
+     */
+    long addFile(final File file) {
         ContentValues values = new ContentValues();
         values.put(EncryptedFilesContract.COLUMN_FILENAME, file.name);
         values.put(EncryptedFilesContract.COLUMN_MIME, file.mime);
@@ -64,19 +70,37 @@ public class Database extends SQLiteOpenHelper {
         return getWritableDatabase().insert(EncryptedFilesContract.TABLE_NAME, null, values);
     }
 
-    public List<File> getFiles() {
+    /**
+     * Deletes a file from the database
+     *
+     * @param id the id of the entry to delete
+     */
+    void deleteFile(final long id) {
+        getWritableDatabase()
+                .delete(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract._ID + " = ?",
+                        new String[]{String.valueOf(id)});
+    }
+
+    /**
+     * Gets all isEncrypted files in the database
+     *
+     * @return the list of isEncrypted files
+     */
+    List<File> getFiles() {
         try (Cursor c = getReadableDatabase()
                 .query(EncryptedFilesContract.TABLE_NAME, EncryptedFilesContract.ALL_COLUMNS, null,
                         null, null, null, null)) {
             if (c != null && c.moveToFirst()) {
+                int indexId = c.getColumnIndex(EncryptedFilesContract._ID);
                 int indexName = c.getColumnIndex(EncryptedFilesContract.COLUMN_FILENAME);
                 int indexMime = c.getColumnIndex(EncryptedFilesContract.COLUMN_MIME);
                 int indexUri = c.getColumnIndex(EncryptedFilesContract.COLUMN_URI);
                 int indexSize = c.getColumnIndex(EncryptedFilesContract.COLUMN_SIZE);
                 List<File> re = new ArrayList<>(c.getCount());
                 while (!c.isAfterLast()) {
-                    re.add(new File(c.getString(indexName), c.getString(indexMime),
-                            Uri.parse(c.getString(indexUri)), c.getInt(indexSize)));
+                    re.add(new File(c.getInt(indexId), c.getString(indexName),
+                            c.getString(indexMime), Uri.parse(c.getString(indexUri)),
+                            c.getInt(indexSize), true));
                     c.moveToNext();
                 }
                 return re;

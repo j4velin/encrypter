@@ -27,7 +27,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
@@ -44,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_PERMISSION = 2;
 
     private MainActivityFragment fragment;
+    private CoordinatorLayout coordinatorLayout;
 
     private enum Requirement {
         FINGERPRINT_PERMISSION,
@@ -76,7 +80,18 @@ public class MainActivity extends AppCompatActivity {
         String exception = null;
         if (error == null) {
             try {
-                CipherUtil.init();
+                if (CipherUtil.init()) {
+                    new AlertDialog.Builder(this).setTitle(R.string.key_generated)
+                            .setMessage(R.string.new_key_warning)
+                            .setPositiveButton(android.R.string.ok,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(final DialogInterface dialogInterface,
+                                                            int i) {
+                                            dialogInterface.dismiss();
+                                        }
+                                    }).create().show();
+                }
             } catch (GeneralSecurityException | IOException e) {
                 e.printStackTrace();
                 exception = e.getMessage();
@@ -88,29 +103,32 @@ public class MainActivity extends AppCompatActivity {
         if (error != null || exception != null) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             if (exception != null) {
-                builder.setMessage("Error creating/loading cryptographic key: " + exception);
+                builder.setMessage(getString(R.string.error_load_key, exception));
             } else {
                 switch (error) {
                     case FINGERPRINT_SENSOR:
-                        builder.setMessage("No fingerprint reader found");
+                        builder.setMessage(R.string.error_no_fingerprint_hardware);
                         break;
                     case FINGERPRINT_SETUP:
-                        builder.setMessage("No fingerprints registered");
-                        builder.setPositiveButton("Register finger",
+                        builder.setMessage(R.string.error_no_fingerprints);
+                        builder.setPositiveButton(R.string.register_finger,
                                 new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void onClick(final DialogInterface dialogInterface, int i) {
+                                    public void onClick(final DialogInterface dialogInterface,
+                                                        int i) {
                                         startActivity(
                                                 new Intent(Settings.ACTION_SECURITY_SETTINGS));
                                         dialogInterface.cancel();
                                     }
                                 });
+                        break;
                     case DEVICE_SECURE:
-                        builder.setMessage("No secure lockscreen found");
-                        builder.setPositiveButton("Setup lockscreen",
+                        builder.setMessage(R.string.error_no_lockscreen);
+                        builder.setPositiveButton(R.string.setup_lockscreen,
                                 new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void onClick(final DialogInterface dialogInterface, int i) {
+                                    public void onClick(final DialogInterface dialogInterface,
+                                                        int i) {
                                         startActivity(
                                                 new Intent(Settings.ACTION_SECURITY_SETTINGS));
                                         dialogInterface.cancel();
@@ -135,10 +153,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    CoordinatorLayout getCoordinatorLayout() {
+        return coordinatorLayout;
+    }
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
         fab.setOnClickListener(new View.OnClickListener() {
@@ -157,7 +180,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, final String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull final String[] permissions,
+                                           @NonNull int[] grantResults) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             init();
         }
@@ -165,32 +189,39 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
-        if (resultCode == RESULT_OK && data != null) {
+        if (requestCode == REQUEST_INPUT && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            switch (requestCode) {
-                case REQUEST_INPUT:
-                    String inputName = null;
-                    int inputSize = -1;
-                    String inputType = getContentResolver().getType(uri);
-                    try (Cursor cursor = getContentResolver()
-                            .query(uri, null, null, null, null, null)) {
-                        if (cursor != null && cursor.moveToFirst()) {
-                            inputName = cursor.getString(
-                                    cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                            int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-                            if (!cursor.isNull(sizeIndex)) {
-                                inputSize = cursor.getInt(sizeIndex);
-                            }
-                        }
+            String inputName = null;
+            int inputSize = -1;
+            String inputType = getContentResolver().getType(uri);
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    inputName =
+                            cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                    int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                    if (!cursor.isNull(sizeIndex)) {
+                        inputSize = cursor.getInt(sizeIndex);
                     }
-                    File input = new File(inputName, inputType, uri, inputSize);
-                    try {
-                        CryptoUtil.encrypt(MainActivity.this, fragment, input);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    break;
+                }
             }
+            File input = new File(-1, inputName, inputType, uri, inputSize, false);
+            try {
+                CryptoUtil.encrypt(MainActivity.this, fragment, input);
+            } catch (GeneralSecurityException e) {
+                Snackbar.make(coordinatorLayout, getString(R.string.error_security, e.getMessage()),
+                        Snackbar.LENGTH_LONG).show();
+            } catch (FileNotFoundException e) {
+                Snackbar.make(coordinatorLayout, R.string.error_file_not_found,
+                        Snackbar.LENGTH_LONG).show();
+            } catch (IOException e) {
+                Snackbar.make(coordinatorLayout, getString(R.string.error_io, e.getMessage()),
+                        Snackbar.LENGTH_LONG).show();
+            }
+        } else
+
+        {
+            super.onActivityResult(requestCode, resultCode, data);
         }
+
     }
 }

@@ -16,9 +16,11 @@
 package de.j4velin.encrypter;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -28,22 +30,23 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.util.List;
 
 /**
- * A placeholder fragment containing a simple view.
+ * Fragment showing the list of isEncrypted files
  */
-public class MainActivityFragment extends Fragment implements EncryptCallback {
+public class MainActivityFragment extends Fragment implements CryptoCallback {
 
     private FileAdapter adapter;
     private final static int REQUEST_OUTPUT = 1;
-
     private File selectedFile;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                             final Bundle savedInstanceState) {
         RecyclerView recyclerView =
                 (RecyclerView) inflater.inflate(R.layout.fragment_main, container, false);
         Database db = new Database(getContext());
@@ -56,24 +59,43 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
     }
 
     @Override
-    public void encryptionComplete(final File encryptedFile) {
-        Database db = new Database(getContext());
-        db.addFile(encryptedFile);
-        db.close();
-        adapter.files.add(encryptedFile);
-        adapter.notifyDataSetChanged();
+    public void operationComplete(final File resultFile) {
+        if (resultFile.isEncrypted) {
+            adapter.files.add(resultFile);
+            adapter.notifyItemInserted(adapter.files.size());
+        } else {
+            Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                    getString(R.string.file_decrypted, resultFile.name), Snackbar.LENGTH_LONG)
+                    .setActionTextColor(getResources().getColor(R.color.colorPrimary, null))
+                    .setAction(R.string.open_file, new View.OnClickListener() {
+                        @Override
+                        public void onClick(final View view) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setDataAndType(resultFile.uri, resultFile.mime);
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            startActivity(intent);
+                        }
+                    }).show();
+        }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, final Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_OUTPUT) {
-                Uri output = data.getData();
                 try {
-                    OutputStream out = getActivity().getContentResolver().openOutputStream(output);
-                    CryptoUtil.decrypt(getContext(), selectedFile, out);
+                    CryptoUtil.decrypt(getContext(), this, selectedFile, data.getData());
+                } catch (GeneralSecurityException e) {
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            getString(R.string.error_security, e.getMessage()),
+                            Snackbar.LENGTH_LONG).show();
+                } catch (FileNotFoundException e) {
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            R.string.error_file_not_found, Snackbar.LENGTH_LONG).show();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            getString(R.string.error_io, e.getMessage()), Snackbar.LENGTH_LONG)
+                            .show();
                 }
             }
         }
@@ -85,7 +107,32 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
         private final View.OnClickListener deleteListener = new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
-                int position = (int) view.getTag();
+                final int position = (int) view.getTag();
+                final File file = files.get(position);
+                new AlertDialog.Builder(getContext())
+                        .setMessage(getString(R.string.ask_delete, file.name))
+                        .setNegativeButton(android.R.string.no,
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(final DialogInterface dialogInterface,
+                                                        int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).setPositiveButton(android.R.string.yes,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(final DialogInterface dialogInterface, int i) {
+                                java.io.File f = new java.io.File(file.uri.getPath());
+                                if (!f.exists() || f.delete()) {
+                                    Database db = new Database(getContext());
+                                    db.deleteFile(file.id);
+                                    db.close();
+                                    files.remove(position);
+                                    notifyItemRemoved(position);
+                                }
+                                dialogInterface.dismiss();
+                            }
+                        }).create().show();
             }
         };
         private final View.OnClickListener decryptListener = new View.OnClickListener() {
@@ -118,13 +165,21 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
         public void onBindViewHolder(final ViewHolder holder, int position) {
             File f = files.get(position);
             holder.name.setText(f.name);
-            int icon = 0;
+            holder.size.setText(File.formatSize(f.size));
+            if (f.mime.contains("/")) {
+                holder.mime.setContentDescription(f.mime.substring(0, f.mime.indexOf("/")));
+            } else {
+                holder.mime.setContentDescription(getString(R.string.unknown_file));
+            }
+            int icon;
             if (f.mime.startsWith("image")) {
                 icon = R.drawable.ic_photo;
             } else if (f.mime.startsWith("video")) {
                 icon = R.drawable.ic_movie;
             } else if (f.mime.startsWith("audio")) {
                 icon = R.drawable.ic_sound;
+            } else {
+                icon = R.drawable.ic_file;
             }
             holder.mime.setImageResource(icon);
             holder.delete.setTag(position);
@@ -138,7 +193,7 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
 
         public class ViewHolder extends RecyclerView.ViewHolder {
             private final ImageView mime;
-            private final TextView name;
+            private final TextView name, size;
             private final View delete;
             private final View card;
 
@@ -147,6 +202,7 @@ public class MainActivityFragment extends Fragment implements EncryptCallback {
                 card = itemView;
                 mime = (ImageView) itemView.findViewById(R.id.mime);
                 name = (TextView) itemView.findViewById(R.id.name);
+                size = (TextView) itemView.findViewById(R.id.size);
                 delete = itemView.findViewById(R.id.delete);
             }
         }

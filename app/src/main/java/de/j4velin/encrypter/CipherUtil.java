@@ -23,15 +23,13 @@ import android.hardware.fingerprint.FingerprintManager;
 import android.os.CancellationSignal;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 import javax.crypto.Cipher;
@@ -40,11 +38,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
 /**
- * Utility class to deal with the cryptographic stuff.
+ * Utility class to deal with the cryptographic ciphers.
  *
  * @see <a href="https://github.com/googlesamples/android-FingerprintDialog">Based on Google's FingerprintSample</a>
  */
-public class CipherUtil {
+class CipherUtil {
 
     private CipherUtil() {
     }
@@ -62,10 +60,11 @@ public class CipherUtil {
     /**
      * Initializes the keystore and the ciphers and creates the key if necessary
      *
+     * @return true, if a new key has been generated
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    static void init() throws GeneralSecurityException, IOException {
+    static boolean init() throws GeneralSecurityException, IOException {
         mKeyStore = KeyStore.getInstance("AndroidKeyStore");
         mKeyGenerator =
                 KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
@@ -77,6 +76,9 @@ public class CipherUtil {
                         KeyProperties.ENCRYPTION_PADDING_PKCS7);
         if (!hasKey()) {
             createKey();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -126,24 +128,21 @@ public class CipherUtil {
      * @param iv       the initialization vector for CBC mode or null, to request encryption cipher
      * @param callback the callback which will be notified once the cipher is ready
      */
-    static void getCipher(final Context context, final byte[] iv, final CipherResultCallback callback) {
-        try {
-            mKeyStore.load(null);
-            SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
-            if (iv == null) {
-                encrypt.init(Cipher.ENCRYPT_MODE, key);
-            } else {
-                decrypt.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
-            }
-        } catch (InvalidAlgorithmParameterException | KeyStoreException | CertificateException | UnrecoverableKeyException | IOException
-                | NoSuchAlgorithmException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to init Decipher", e);
+    static void getCipher(final Context context, final byte[] iv,
+                          final CipherResultCallback callback) throws GeneralSecurityException,
+            IOException {
+        mKeyStore.load(null);
+        SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
+        if (iv == null) {
+            encrypt.init(Cipher.ENCRYPT_MODE, key);
+        } else {
+            decrypt.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
         }
         auth(iv == null ? encrypt : decrypt, context, callback);
     }
 
-    private static void auth(final Cipher c, final Context context, final CipherResultCallback callback) {
+    private static void auth(final Cipher c, final Context context,
+                             final CipherResultCallback callback) {
         FingerprintManager.CryptoObject mCryptoObject = new FingerprintManager.CryptoObject(c);
         final CancellationSignal mCancellationSignal = new CancellationSignal();
         final Dialog dialog = new AlertDialog.Builder(context).setView(R.layout.fingerprint_dialog)
@@ -163,13 +162,22 @@ public class CipherUtil {
         dialog.show();
         //noinspection ResourceType
         ((FingerprintManager) context.getSystemService(Context.FINGERPRINT_SERVICE))
-                .authenticate(mCryptoObject, mCancellationSignal, 0 /* flags */,
+                .authenticate(mCryptoObject, mCancellationSignal, 0,
                         new FingerprintManager.AuthenticationCallback() {
                             @Override
-                            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+                            public void onAuthenticationSucceeded(
+                                    FingerprintManager.AuthenticationResult result) {
                                 super.onAuthenticationSucceeded(result);
                                 dialog.dismiss();
                                 callback.cipherAvailable(c);
+                            }
+
+                            @Override
+                            public void onAuthenticationError(int errorCode,
+                                                              final CharSequence errString) {
+                                super.onAuthenticationError(errorCode, errString);
+                                ((TextView) dialog.findViewById(R.id.text))
+                                        .setText(context.getString(R.string.error_authentication, errString));
                             }
                         }, null);
     }

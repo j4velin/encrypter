@@ -23,15 +23,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
+/**
+ * Background task to save the isEncrypted/decrypted file to the file system
+ */
+class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;
     private final static int UPDATE_PERCENT = 5;
+    private final static int BUFFER_SIZE = 8192;
 
+    private final Context context;
     private final File resultFile;
-    private final EncryptCallback callback;
+    private final CryptoCallback callback;
 
-    public SaveTask(final Context context, final EncryptCallback callback, final File resultFile) {
+    SaveTask(final Context context, final CryptoCallback callback, final File resultFile) {
+        this.context = context;
         this.resultFile = resultFile;
         this.callback = callback;
         dialog = new ProgressDialog(context);
@@ -39,6 +45,7 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
         dialog.setProgressStyle(resultFile.size > 0 ? ProgressDialog.STYLE_HORIZONTAL :
                 ProgressDialog.STYLE_SPINNER);
         dialog.setMax(resultFile.size);
+        dialog.setProgressNumberFormat("%1$,d / %2$,d Bytes");
     }
 
     @Override
@@ -51,8 +58,11 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     protected void onPostExecute(Void aVoid) {
         super.onPostExecute(aVoid);
         dialog.dismiss();
+        Database db = new Database(context);
+        resultFile.id = db.addFile(resultFile);
+        db.close();
         if (callback != null) {
-            callback.encryptionComplete(resultFile);
+            callback.operationComplete(resultFile);
         }
     }
 
@@ -64,19 +74,19 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     @Override
     protected Void doInBackground(final Streams... parameters) {
         int bytesRead = 0;
-        int max = resultFile.size;
-        int percent = (int) (max / (100f / UPDATE_PERCENT));
+        int percentage = (int) (resultFile.size * (UPDATE_PERCENT / 100f));
         InputStream in = parameters[0].input;
         OutputStream out = parameters[0].output;
+        byte[] buffer = new byte[BUFFER_SIZE];
         int read;
+        int nextUpdate = percentage;
         try {
-            while ((read = in.read()) != -1) {
-                out.write(read);
-                if (max > 0) {
-                    bytesRead++;
-                    if (bytesRead % percent == 0) {
-                        publishProgress(bytesRead);
-                    }
+            while ((read = in.read(buffer)) > 0) {
+                out.write(buffer, 0, read);
+                bytesRead += read;
+                if (bytesRead > nextUpdate) {
+                    publishProgress(bytesRead);
+                    nextUpdate = bytesRead + percentage;
                 }
             }
             out.flush();
@@ -97,11 +107,11 @@ public class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
         return null;
     }
 
-    public static class Streams {
+    static class Streams {
         private final InputStream input;
         private final OutputStream output;
 
-        public Streams(final InputStream input, final OutputStream output) {
+        Streams(final InputStream input, final OutputStream output) {
             this.input = input;
             this.output = output;
         }

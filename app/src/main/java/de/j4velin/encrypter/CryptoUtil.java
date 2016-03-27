@@ -18,11 +18,13 @@ package de.j4velin.encrypter;
 import android.content.Context;
 import android.net.Uri;
 
-import java.io.FileNotFoundException;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.security.spec.InvalidParameterSpecException;
 
 import javax.crypto.Cipher;
@@ -30,20 +32,44 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 
-public class CryptoUtil {
+/**
+ * Utility class to deal with encryption and decryption
+ */
+class CryptoUtil {
 
-    public static void encrypt(final Context context, final EncryptCallback callback, final File plaintextFile) throws
-            FileNotFoundException {
+    private CryptoUtil() {
+    }
+
+    /**
+     * Encrypts the given file
+     *
+     * @param context       the context
+     * @param callback      callback to be called once the encryption is complete
+     * @param plaintextFile the plaintext file
+     */
+    static void encrypt(final Context context, final CryptoCallback callback,
+                        final File plaintextFile) throws GeneralSecurityException, IOException {
         java.io.File dir = context.getExternalFilesDir(null);
         if (dir == null) {
             dir = context.getFilesDir();
         }
         java.io.File encryptedFile = new java.io.File(dir, plaintextFile.name + ".enc");
+        if (encryptedFile.exists()) {
+            int index = plaintextFile.name.lastIndexOf(".");
+            String prefix = plaintextFile.name.substring(0, index) + "_";
+            String postfix = plaintextFile.name.substring(index) + ".enc";
+            int tries = 2;
+            while (encryptedFile.exists()) {
+                encryptedFile = new java.io.File(dir, prefix + tries + postfix);
+                tries++;
+            }
+        }
         Uri uri = Uri.fromFile(encryptedFile);
         final File resultFile =
-                new File(plaintextFile.name, plaintextFile.mime, uri, plaintextFile.size);
-        final OutputStream output = new FileOutputStream(encryptedFile);
-        final InputStream input = context.getContentResolver().openInputStream(plaintextFile.uri);
+                new File(-1, plaintextFile.name, plaintextFile.mime, uri, plaintextFile.size, true);
+        final OutputStream output = new BufferedOutputStream(new FileOutputStream(encryptedFile));
+        final InputStream input = new BufferedInputStream(
+                context.getContentResolver().openInputStream(plaintextFile.uri));
         CipherUtil.getCipher(context, null, new CipherUtil.CipherResultCallback() {
             @Override
             public void cipherAvailable(final Cipher c) {
@@ -52,8 +78,8 @@ public class CryptoUtil {
                     output.write(iv.length);
                     output.write(iv);
                     CipherOutputStream outputStream = new CipherOutputStream(output, c);
-                    new SaveTask(context, callback, resultFile).execute(
-                            new SaveTask.Streams(input, outputStream));
+                    new SaveTask(context, callback, resultFile)
+                            .execute(new SaveTask.Streams(input, outputStream));
                 } catch (IOException | InvalidParameterSpecException e) {
                     e.printStackTrace();
                 }
@@ -61,17 +87,32 @@ public class CryptoUtil {
         });
     }
 
-    public static void decrypt(final Context context, final File encrypted, final OutputStream output) throws
+    /**
+     * Decrypts the given file
+     *
+     * @param context       the context
+     * @param callback      callback to be called once the decryption is complete
+     * @param encryptedFile the encrypted file
+     * @param out           the output uri to write the plaintext file to
+     */
+    static void decrypt(final Context context, final CryptoCallback callback,
+                        final File encryptedFile, final Uri out) throws GeneralSecurityException,
             IOException {
-        final InputStream input = context.getContentResolver().openInputStream(encrypted.uri);
+        final InputStream input = new BufferedInputStream(
+                context.getContentResolver().openInputStream(encryptedFile.uri));
+        final OutputStream output =
+                new BufferedOutputStream(context.getContentResolver().openOutputStream(out));
         int ivLength = input.read();
         byte[] iv = new byte[ivLength];
         input.read(iv);
+        final File resultFile =
+                new File(-1, encryptedFile.name, encryptedFile.mime, out, encryptedFile.size,
+                        false);
         CipherUtil.getCipher(context, iv, new CipherUtil.CipherResultCallback() {
             @Override
             public void cipherAvailable(final Cipher c) {
                 CipherInputStream inputStream = new CipherInputStream(input, c);
-                new SaveTask(context, null, encrypted)
+                new SaveTask(context, callback, resultFile)
                         .execute(new SaveTask.Streams(inputStream, output));
             }
         });
