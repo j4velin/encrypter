@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Encrypter</string>
-    <string name="action_settings">Settings</string>
     <string name="ask_delete">Really delete %s?</string>
     <string name="error_load_key">Error creating/loading cryptographic key: %s</string>
     <string name="error_no_fingerprint_hardware">No fingerprint reader found</string>
