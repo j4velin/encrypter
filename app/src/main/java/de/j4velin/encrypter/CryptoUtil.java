@@ -44,11 +44,10 @@ class CryptoUtil {
      * Encrypts the given file
      *
      * @param context       the context
-     * @param callback      callback to be called once the encryption is complete
      * @param plaintextFile the plaintext file
      */
-    static void encrypt(final Context context, final CryptoCallback callback,
-                        final File plaintextFile) throws GeneralSecurityException, IOException {
+    static void encrypt(final Context context, final File plaintextFile) throws
+            GeneralSecurityException, IOException {
         java.io.File dir = context.getExternalFilesDir(null);
         if (dir == null) {
             dir = context.getFilesDir();
@@ -78,7 +77,7 @@ class CryptoUtil {
                     output.write(iv.length);
                     output.write(iv);
                     CipherOutputStream outputStream = new CipherOutputStream(output, c);
-                    new SaveTask(context, callback, resultFile)
+                    new SaveTask(context, resultFile)
                             .execute(new SaveTask.Streams(input, outputStream));
                 } catch (IOException | InvalidParameterSpecException e) {
                     e.printStackTrace();
@@ -91,13 +90,11 @@ class CryptoUtil {
      * Decrypts the given file
      *
      * @param context       the context
-     * @param callback      callback to be called once the decryption is complete
      * @param encryptedFile the encrypted file
      * @param out           the output uri to write the plaintext file to
      */
-    static void decrypt(final Context context, final CryptoCallback callback,
-                        final File encryptedFile, final Uri out) throws GeneralSecurityException,
-            IOException {
+    static void decrypt(final Context context, final File encryptedFile, final Uri out) throws
+            GeneralSecurityException, IOException {
         final InputStream input = new BufferedInputStream(
                 context.getContentResolver().openInputStream(encryptedFile.uri));
         final OutputStream output =
@@ -112,7 +109,7 @@ class CryptoUtil {
             @Override
             public void cipherAvailable(final Cipher c) {
                 CipherInputStream inputStream = new CipherInputStream(input, c);
-                new SaveTask(context, callback, resultFile)
+                new SaveTask(context, resultFile)
                         .execute(new SaveTask.Streams(inputStream, output));
             }
         });

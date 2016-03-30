@@ -16,13 +16,15 @@
 package de.j4velin.encrypter;
 
 import android.net.Uri;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 /**
  * A class representing an isEncrypted or a plaintext file.
  * If the object represents an isEncrypted file, the name, mime type and size information are those of
  * the originating plaintext file
  */
-class File {
+class File implements Parcelable {
 
     /**
      * The original display name
@@ -59,6 +61,37 @@ class File {
         this.isEncrypted = isEncrypted;
     }
 
+    private File(final Parcel in) {
+        name = in.readString();
+        mime = in.readString();
+        uri = Uri.parse(in.readString());
+        size = in.readInt();
+        id = in.readLong();
+        isEncrypted = in.readByte() != 0;
+    }
+
+    @Override
+    public void writeToParcel(final Parcel parcel, int flags) {
+        parcel.writeString(name);
+        parcel.writeString(mime);
+        parcel.writeString(uri.toString());
+        parcel.writeInt(size);
+        parcel.writeLong(id);
+        parcel.writeByte((byte) (isEncrypted ? 1 : 0));
+    }
+
+    public static final Creator<File> CREATOR = new Creator<File>() {
+        @Override
+        public File createFromParcel(Parcel in) {
+            return new File(in);
+        }
+
+        @Override
+        public File[] newArray(int size) {
+            return new File[size];
+        }
+    };
+
     @Override
     public String toString() {
         return id + "," + name + "," + mime + "," + formatSize(size) + "," + uri + "," +
@@ -70,5 +103,10 @@ class File {
         int kb = size / 1024;
         if (kb < 1024) return kb + " KB";
         else return (kb / 1024) + " MB";
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 }

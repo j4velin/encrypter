@@ -44,7 +44,6 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_INPUT = 1;
     private final static int REQUEST_PERMISSION = 2;
 
-    private MainActivityFragment fragment;
     private CoordinatorLayout coordinatorLayout;
 
     private enum Requirement {
@@ -171,8 +170,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_INPUT);
             }
         });
-        fragment =
-                (MainActivityFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
         init();
     }
 
@@ -204,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
             }
             File input = new File(-1, inputName, inputType, uri, inputSize, false);
             try {
-                CryptoUtil.encrypt(MainActivity.this, fragment, input);
+                CryptoUtil.encrypt(MainActivity.this, input);
             } catch (GeneralSecurityException e) {
                 Snackbar.make(coordinatorLayout, getString(R.string.error_security, e.getMessage()),
                         Snackbar.LENGTH_LONG).show();

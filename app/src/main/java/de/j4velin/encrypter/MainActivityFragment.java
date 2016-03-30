@@ -17,8 +17,11 @@ package de.j4velin.encrypter;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
@@ -38,10 +41,39 @@ import java.util.List;
 /**
  * Fragment showing the list of isEncrypted files
  */
-public class MainActivityFragment extends Fragment implements CryptoCallback {
+public class MainActivityFragment extends Fragment {
+
+    public final static String CRYPTO_COMPLETE_ACTION = "crypto_complete";
+    public final static String EXTRA_RESULT_FILE = "result_file";
 
     private FileAdapter adapter;
     private final static int REQUEST_OUTPUT = 1;
+    private final BroadcastReceiver cryptoCompleteReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            if (intent.getAction().equals(CRYPTO_COMPLETE_ACTION)) {
+                final File resultFile = intent.getParcelableExtra(EXTRA_RESULT_FILE);
+                if (resultFile.isEncrypted) {
+                    adapter.files.add(resultFile);
+                    adapter.notifyItemInserted(adapter.files.size());
+                } else {
+                    Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
+                            getString(R.string.file_decrypted, resultFile.name),
+                            Snackbar.LENGTH_LONG)
+                            .setActionTextColor(getResources().getColor(R.color.colorPrimary, null))
+                            .setAction(R.string.open_file, new View.OnClickListener() {
+                                @Override
+                                public void onClick(final View view) {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                                    intent.setDataAndType(resultFile.uri, resultFile.mime);
+                                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    startActivity(intent);
+                                }
+                            }).show();
+                }
+            }
+        }
+    };
     private File selectedFile;
 
     @Override
@@ -59,24 +91,16 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
     }
 
     @Override
-    public void operationComplete(final File resultFile) {
-        if (resultFile.isEncrypted) {
-            adapter.files.add(resultFile);
-            adapter.notifyItemInserted(adapter.files.size());
-        } else {
-            Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
-                    getString(R.string.file_decrypted, resultFile.name), Snackbar.LENGTH_LONG)
-                    .setActionTextColor(getResources().getColor(R.color.colorPrimary, null))
-                    .setAction(R.string.open_file, new View.OnClickListener() {
-                        @Override
-                        public void onClick(final View view) {
-                            Intent intent = new Intent(Intent.ACTION_VIEW);
-                            intent.setDataAndType(resultFile.uri, resultFile.mime);
-                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            startActivity(intent);
-                        }
-                    }).show();
-        }
+    public void onResume() {
+        super.onResume();
+        getActivity()
+                .registerReceiver(cryptoCompleteReceiver, new IntentFilter(CRYPTO_COMPLETE_ACTION));
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(cryptoCompleteReceiver);
     }
 
     @Override
@@ -84,7 +108,7 @@ public class MainActivityFragment extends Fragment implements CryptoCallback {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_OUTPUT) {
                 try {
-                    CryptoUtil.decrypt(getContext(), this, selectedFile, data.getData());
+                    CryptoUtil.decrypt(getContext(), selectedFile, data.getData());
                 } catch (GeneralSecurityException e) {
                     Snackbar.make(((MainActivity) getActivity()).getCoordinatorLayout(),
                             getString(R.string.error_security, e.getMessage()),

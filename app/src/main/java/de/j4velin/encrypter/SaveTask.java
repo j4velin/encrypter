@@ -17,6 +17,7 @@ package de.j4velin.encrypter;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 
 import java.io.IOException;
@@ -34,14 +35,12 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final Context context;
     private final File resultFile;
-    private final CryptoCallback callback;
 
-    SaveTask(final Context context, final CryptoCallback callback, final File resultFile) {
+    SaveTask(final Context context, final File resultFile) {
         this.context = context;
         this.resultFile = resultFile;
-        this.callback = callback;
         dialog = new ProgressDialog(context);
-        dialog.setCancelable(false);
+        dialog.setCancelable(true);
         dialog.setProgressStyle(resultFile.size > 0 ? ProgressDialog.STYLE_HORIZONTAL :
                 ProgressDialog.STYLE_SPINNER);
         dialog.setMax(resultFile.size);
@@ -57,13 +56,20 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     @Override
     protected void onPostExecute(Void aVoid) {
         super.onPostExecute(aVoid);
-        dialog.dismiss();
-        Database db = new Database(context);
-        resultFile.id = db.addFile(resultFile);
-        db.close();
-        if (callback != null) {
-            callback.operationComplete(resultFile);
+        if (resultFile.isEncrypted) {
+            Database db = new Database(context);
+            resultFile.id = db.addFile(resultFile);
+            db.close();
         }
+        if (dialog.isShowing()) {
+            try {
+                dialog.dismiss();
+            } catch (Exception e) {
+            }
+        }
+        context.sendBroadcast(new Intent(MainActivityFragment.CRYPTO_COMPLETE_ACTION)
+                .putExtra(MainActivityFragment.EXTRA_RESULT_FILE, resultFile)
+                .setPackage(context.getPackageName()));
     }
 
     @Override
