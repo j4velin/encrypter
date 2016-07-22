@@ -66,9 +66,9 @@ class CryptoUtil {
         Uri uri = Uri.fromFile(encryptedFile);
         final File resultFile =
                 new File(-1, plaintextFile.name, plaintextFile.mime, uri, plaintextFile.size, true);
-        final OutputStream output = new BufferedOutputStream(new FileOutputStream(encryptedFile));
+        final OutputStream output = new BufferedOutputStream(new FileOutputStream(encryptedFile), SaveTask.BUFFER_SIZE);
         final InputStream input = new BufferedInputStream(
-                context.getContentResolver().openInputStream(plaintextFile.uri));
+                context.getContentResolver().openInputStream(plaintextFile.uri), SaveTask.BUFFER_SIZE);
         CipherUtil.getCipher(context, null, new CipherUtil.CipherResultCallback() {
             @Override
             public void cipherAvailable(final Cipher c) {
@@ -96,9 +96,9 @@ class CryptoUtil {
     static void decrypt(final Context context, final File encryptedFile, final Uri out) throws
             GeneralSecurityException, IOException {
         final InputStream input = new BufferedInputStream(
-                context.getContentResolver().openInputStream(encryptedFile.uri));
+                context.getContentResolver().openInputStream(encryptedFile.uri), SaveTask.BUFFER_SIZE);
         final OutputStream output =
-                new BufferedOutputStream(context.getContentResolver().openOutputStream(out));
+                new BufferedOutputStream(context.getContentResolver().openOutputStream(out), SaveTask.BUFFER_SIZE);
         int ivLength = input.read();
         byte[] iv = new byte[ivLength];
         input.read(iv);

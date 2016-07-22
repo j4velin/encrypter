@@ -31,7 +31,7 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;
     private final static int UPDATE_PERCENT = 5;
-    private final static int BUFFER_SIZE = 8192;
+    public final static int BUFFER_SIZE = 4096;
 
     private final Context context;
     private final File resultFile;
