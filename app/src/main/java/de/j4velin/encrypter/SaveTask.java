@@ -29,14 +29,15 @@ import java.io.OutputStream;
  */
 class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
-    private final ProgressDialog dialog;
-    private final static int UPDATE_PERCENT = 5;
     public final static int BUFFER_SIZE = 4096;
+    private final static int UPDATE_PERCENT = 5;
 
+    private final ProgressDialog dialog;
     private final Context context;
     private final File resultFile;
 
     SaveTask(final Context context, final File resultFile) {
+        if (BuildConfig.DEBUG) android.util.Log.d(MainActivity.TAG, "SaveTask " + resultFile);
         this.context = context;
         this.resultFile = resultFile;
         dialog = new ProgressDialog(context);
@@ -56,6 +57,8 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
     @Override
     protected void onPostExecute(Void aVoid) {
         super.onPostExecute(aVoid);
+        if (BuildConfig.DEBUG)
+            android.util.Log.d(MainActivity.TAG, "SaveTask onPostExecute " + resultFile);
         if (resultFile.isEncrypted) {
             Database db = new Database(context);
             resultFile.id = db.addFile(resultFile);
@@ -67,6 +70,7 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
             } catch (Exception e) {
             }
         }
+
         context.sendBroadcast(new Intent(MainActivityFragment.CRYPTO_COMPLETE_ACTION)
                 .putExtra(MainActivityFragment.EXTRA_RESULT_FILE, resultFile)
                 .setPackage(context.getPackageName()));
@@ -79,6 +83,8 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     @Override
     protected Void doInBackground(final Streams... parameters) {
+        if (BuildConfig.DEBUG)
+            android.util.Log.d(MainActivity.TAG, "SaveTask doInBackground " + resultFile);
         int bytesRead = 0;
         int percentage = (int) (resultFile.size * (UPDATE_PERCENT / 100f));
         InputStream in = parameters[0].input;

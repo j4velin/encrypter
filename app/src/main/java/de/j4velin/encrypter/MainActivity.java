@@ -41,6 +41,8 @@ import java.security.GeneralSecurityException;
 
 public class MainActivity extends AppCompatActivity {
 
+    public final static String TAG = "Encrypter";
+
     private final static int REQUEST_INPUT = 1;
     private final static int REQUEST_PERMISSION = 2;
 

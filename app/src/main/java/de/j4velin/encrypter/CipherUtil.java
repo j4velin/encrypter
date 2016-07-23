@@ -53,12 +53,10 @@ class CipherUtil {
     private static final String KEY_NAME = "my_key";
 
     private static KeyStore mKeyStore;
-    private static Cipher encrypt;
-    private static Cipher decrypt;
     private static KeyGenerator mKeyGenerator;
 
     /**
-     * Initializes the keystore and the ciphers and creates the key if necessary
+     * Initializes the keystore and creates the key if necessary
      *
      * @return true, if a new key has been generated
      * @throws GeneralSecurityException
@@ -68,12 +66,6 @@ class CipherUtil {
         mKeyStore = KeyStore.getInstance("AndroidKeyStore");
         mKeyGenerator =
                 KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-        encrypt = Cipher.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
-                        KeyProperties.ENCRYPTION_PADDING_PKCS7);
-        decrypt = Cipher.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
-                        KeyProperties.ENCRYPTION_PADDING_PKCS7);
         if (!hasKey()) {
             createKey();
             return true;
@@ -133,12 +125,19 @@ class CipherUtil {
             IOException {
         mKeyStore.load(null);
         SecretKey key = (SecretKey) mKeyStore.getKey(KEY_NAME, null);
+        Cipher c;
         if (iv == null) {
-            encrypt.init(Cipher.ENCRYPT_MODE, key);
+            c = Cipher.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
+                            KeyProperties.ENCRYPTION_PADDING_PKCS7);
+            c.init(Cipher.ENCRYPT_MODE, key);
         } else {
-            decrypt.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+            c = Cipher.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" +
+                            KeyProperties.ENCRYPTION_PADDING_PKCS7);
+            c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
         }
-        auth(iv == null ? encrypt : decrypt, context, callback);
+        auth(c, context, callback);
     }
 
     private static void auth(final Cipher c, final Context context,
