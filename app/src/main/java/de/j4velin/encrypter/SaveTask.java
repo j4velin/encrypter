@@ -34,11 +34,12 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
 
     private final ProgressDialog dialog;
     private final Context context;
-    private final File resultFile;
+    private final File resultFile, originalFile;
 
-    SaveTask(final Context context, final File resultFile) {
+    SaveTask(final Context context, final File originalFile, final File resultFile) {
         if (BuildConfig.DEBUG) android.util.Log.d(MainActivity.TAG, "SaveTask " + resultFile);
         this.context = context;
+        this.originalFile = originalFile;
         this.resultFile = resultFile;
         dialog = new ProgressDialog(context);
         dialog.setCancelable(true);
@@ -71,8 +72,9 @@ class SaveTask extends AsyncTask<SaveTask.Streams, Integer, Void> {
             }
         }
 
-        context.sendBroadcast(new Intent(MainActivityFragment.CRYPTO_COMPLETE_ACTION)
-                .putExtra(MainActivityFragment.EXTRA_RESULT_FILE, resultFile)
+        context.sendBroadcast(new Intent(MainActivity.CRYPTO_COMPLETE_ACTION)
+                .putExtra(MainActivity.EXTRA_ORIGINAL_FILE, originalFile)
+                .putExtra(MainActivity.EXTRA_RESULT_FILE, resultFile)
                 .setPackage(context.getPackageName()));
     }
 

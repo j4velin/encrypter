@@ -82,9 +82,9 @@ class Database extends SQLiteOpenHelper {
     }
 
     /**
-     * Gets all isEncrypted files in the database
+     * Gets all encrypted files in the database
      *
-     * @return the list of isEncrypted files
+     * @return the list of encrypted files
      */
     List<File> getFiles() {
         try (Cursor c = getReadableDatabase()

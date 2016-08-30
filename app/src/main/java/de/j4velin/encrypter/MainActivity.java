@@ -18,8 +18,11 @@ package de.j4velin.encrypter;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.KeyguardManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.hardware.fingerprint.FingerprintManager;
@@ -43,16 +46,54 @@ public class MainActivity extends AppCompatActivity {
 
     public final static String TAG = "Encrypter";
 
+    public final static String CRYPTO_COMPLETE_ACTION = "crypto_complete";
+    public final static String EXTRA_RESULT_FILE = "result_file";
+    public final static String EXTRA_ORIGINAL_FILE = "original_file";
+
     private final static int REQUEST_INPUT = 1;
     private final static int REQUEST_PERMISSION = 2;
 
     private CoordinatorLayout coordinatorLayout;
+    private View plaintextHeadline, plaintextView;
 
     private enum Requirement {
         FINGERPRINT_PERMISSION,
         FINGERPRINT_SENSOR,
         FINGERPRINT_SETUP,
         DEVICE_SECURE
+    }
+
+    private final BroadcastReceiver cryptoCompleteReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            if (intent.getAction().equals(CRYPTO_COMPLETE_ACTION)) {
+                final File resultFile = intent.getParcelableExtra(EXTRA_RESULT_FILE);
+                if (!resultFile.isEncrypted) {
+                    Snackbar.make(coordinatorLayout,
+                            getString(R.string.file_decrypted, resultFile.name),
+                            Snackbar.LENGTH_LONG)
+                            .setActionTextColor(getResources().getColor(R.color.colorPrimary, null))
+                            .setAction(R.string.open_file, new View.OnClickListener() {
+                                @Override
+                                public void onClick(final View view) {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                                    intent.setDataAndType(resultFile.uri, resultFile.mime);
+                                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    startActivity(intent);
+                                }
+                            }).show();
+                }
+            }
+        }
+    };
+
+    CoordinatorLayout getCoordinatorLayout() {
+        return coordinatorLayout;
+    }
+
+    void showPlaintextLayout(boolean show) {
+        plaintextHeadline.setVisibility(show ? View.VISIBLE : View.GONE);
+        plaintextView.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     private Requirement getMissingRequirement() {
@@ -152,10 +193,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    CoordinatorLayout getCoordinatorLayout() {
-        return coordinatorLayout;
-    }
-
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -172,9 +209,23 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_INPUT);
             }
         });
+        plaintextHeadline = findViewById(R.id.plainheadline);
+        plaintextView = findViewById(R.id.plain);
+        showPlaintextLayout(false);
         init();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(cryptoCompleteReceiver, new IntentFilter(MainActivity.CRYPTO_COMPLETE_ACTION));
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(cryptoCompleteReceiver);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull final String[] permissions,

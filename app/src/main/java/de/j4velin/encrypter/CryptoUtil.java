@@ -77,7 +77,7 @@ class CryptoUtil {
                     output.write(iv.length);
                     output.write(iv);
                     CipherOutputStream outputStream = new CipherOutputStream(output, c);
-                    new SaveTask(context, resultFile)
+                    new SaveTask(context, plaintextFile, resultFile)
                             .execute(new SaveTask.Streams(input, outputStream));
                 } catch (IOException | InvalidParameterSpecException e) {
                     e.printStackTrace();
@@ -92,8 +92,9 @@ class CryptoUtil {
      * @param context       the context
      * @param encryptedFile the encrypted file
      * @param out           the output uri to write the plaintext file to
+     * @param fileName      the (expected) result file name
      */
-    static void decrypt(final Context context, final File encryptedFile, final Uri out) throws
+    static void decrypt(final Context context, final File encryptedFile, final Uri out, final String fileName) throws
             GeneralSecurityException, IOException {
         final InputStream input = new BufferedInputStream(
                 context.getContentResolver().openInputStream(encryptedFile.uri), SaveTask.BUFFER_SIZE);
@@ -103,13 +104,13 @@ class CryptoUtil {
         byte[] iv = new byte[ivLength];
         input.read(iv);
         final File resultFile =
-                new File(-1, encryptedFile.name, encryptedFile.mime, out, encryptedFile.size,
+                new File(-1, fileName, encryptedFile.mime, out, encryptedFile.size,
                         false);
         CipherUtil.getCipher(context, iv, new CipherUtil.CipherResultCallback() {
             @Override
             public void cipherAvailable(final Cipher c) {
                 CipherInputStream inputStream = new CipherInputStream(input, c);
-                new SaveTask(context, resultFile)
+                new SaveTask(context, encryptedFile, resultFile)
                         .execute(new SaveTask.Streams(inputStream, output));
             }
         });

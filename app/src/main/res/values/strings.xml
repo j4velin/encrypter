@@ -18,5 +18,7 @@
     <string name="unknown_file">unknown file type</string>
     <string name="key_generated">Encryption key generated</string>
     <string name="new_key_warning">A new encryption key has been generated. Please be aware that this key is automatically deleted if you delete the app or change your lockscreen settings! You can not decrypt encrypted files without this key!</string>
+    <string name="recent">Recently used plaintext files</string>
+    <string name="can_not_delete">File \'%s\' can not be deleted</string>
 
 </resources>
