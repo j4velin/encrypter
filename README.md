@@ -1,6 +1,8 @@
 # encrypter
-Android app to encrypt/decrypt files with the fingerprint API
 
+[![Build Status](https://travis-ci.org/j4velin/encrypter.svg?branch=master)](https://travis-ci.org/j4velin/encrypter)
+
+Android app to encrypt/decrypt files with the fingerprint API
 
 <table sytle="border: 0px;">
 <tr>
